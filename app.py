@@ -1,5 +1,5 @@
 import streamlit as st
-from openai import OpenAI
+from groq import Groq
 import os
 
 # --- Sayfa Konfigürasyonu ---
@@ -10,14 +10,13 @@ st.set_page_config(
 )
 
 # --- API Anahtarı ve Model Başlatma ---
-# API Key'i Render Environment Variable'dan veya kullanıcı girdisinden alacağız
-api_key = os.getenv("OPENAI_API_KEY")
+api_key = os.getenv("GROQ_API_KEY")
 
 if not api_key:
-    st.sidebar.warning("⚠️ API Anahtarı girilmedi. Sol menüden giriniz.")
-    api_key = st.sidebar.text_input("OpenAI API Key", type="password")
+    st.sidebar.warning("⚠️ Groq API Anahtarı girilmedi. Lütfen menüden giriniz.")
+    api_key = st.sidebar.text_input("Groq API Key (gsk_ ile başlar)", type="password")
 
-client = OpenAI(api_key=api_key) if api_key else None
+client = Groq(api_key=api_key) if api_key else None
 
 # --- Yan Menü (Sidebar) & İstatistikler ---
 st.sidebar.title("📊 İlerleme Paneli")
@@ -32,7 +31,7 @@ st.sidebar.progress(progress)
 
 # --- Ana Ekran Başlığı ---
 st.title("🇩🇪 7/24 Almanca B2 Öğrenme Asistanı")
-st.caption("Arayüz üzerinden pratik yapın, hatalarınızı anında düzeltin.")
+st.caption("Arayüz üzerinden pratik yapın, hatalarınızı anında düzeltin. (Altyapı: Groq Llama3)")
 
 # --- Sekmeli Arayüz Tasarımı ---
 tab1, tab2, tab3 = st.tabs(["💬 AI Öğretmen ile Sohbet", "📚 Kelime Laboratuvarı (SRS)", "🎯 Günlük Görevler"])
@@ -44,7 +43,7 @@ with tab1:
     # Sohbet Geçmişi Hafızası
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "system", "content": "Sen Almanca öğretmenisin. Kullanıcının seviyesi B1-B2 yolunda. Yanıtlarını Almanca ver. Kullanıcı gramer veya kelime hatası yaparsa, yanıtının en başında hatayı düzelt (Örn: '❌ Hata: ich bin gegangen | ✅ Doğru: Ich bin gegangen') ve ardından sohbeti devam ettir."}
+            {"role": "system", "content": "Sen Alman bir öğretmensin. Öğrencin B1-B2 seviyesine ulaşmaya çalışıyor. Bütün cevaplarını tamamen Almanca olarak vermelisin. Eğer kullanıcı Almanca gramer, cümle yapısı veya kelime hatası yaparsa, yanıtına muhakkak hatayı düzelterek başla. (Örnek format: '❌ Hata: [kullanıcının yazdığı] | ✅ Doğru: [doğru hali]'). Düzeltmeyi yaptıktan sonra sohbete devam et."}
         ]
 
     # Eski Mesajları Ekrana Yazdır
@@ -54,9 +53,9 @@ with tab1:
                 st.write(msg["content"])
 
     # Kullanıcı Mesaj Girişi
-    if prompt := st.chat_input("Almanca bir şeyler yazın... (Örn: Heute habe ich viel gearbeitet.)"):
+    if prompt := st.chat_input("Almanca bir yazı yazın... (Örn: Heute habe ich viel gearbeitet.)"):
         if not client:
-            st.error("Lütfen önce API Anahtarınızı sol menüden girin!")
+            st.error("Lütfen önce Groq API Anahtarınızı sol menüden girin veya Render'da 'GROQ_API_KEY' environment variable'ını ayarlayın!")
         else:
             # Kullanıcı mesajını ekle
             st.session_state.messages.append({"role": "user", "content": prompt})
@@ -68,21 +67,24 @@ with tab1:
                 response_placeholder = st.empty()
                 full_response = ""
                 
-                # OpenAI API Çağrısı
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo", # Veya gpt-4o / groq / gemini
-                    messages=st.session_state.messages,
-                    stream=True,
-                )
+                try:
+                    # Groq API Çağrısı
+                    response = client.chat.completions.create(
+                        messages=st.session_state.messages,
+                        model="llama3-8b-8192", 
+                        stream=True,
+                    )
+                    
+                    for chunk in response:
+                        if chunk.choices[0].delta.content:
+                            full_response += chunk.choices[0].delta.content
+                            response_placeholder.markdown(full_response + "▌")
+                    
+                    response_placeholder.markdown(full_response)
+                    st.session_state.messages.append({"role": "assistant", "content": full_response})
                 
-                for chunk in response:
-                    if chunk.choices[0].delta.content:
-                        full_response += chunk.choices[0].delta.content
-                        response_placeholder.markdown(full_response + "▌")
-                
-                response_placeholder.markdown(full_response)
-            
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
+                except Exception as e:
+                    st.error(f"Bir hata oluştu: {e}")
 
 # --- TAB 2: Kelime Laboratuvarı ---
 with tab2:
