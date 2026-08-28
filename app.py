@@ -31,7 +31,7 @@ st.sidebar.progress(progress)
 
 # --- Ana Ekran Başlığı ---
 st.title("🇩🇪 7/24 Almanca B2 Öğrenme Asistanı")
-st.caption("Arayüz üzerinden pratik yapın, hatalarınızı anında düzeltin. (Altyapı: Groq Llama3)")
+st.caption("Arayüz üzerinden pratik yapın, hatalarınızı anında düzeltin. (Altyapı: Groq Llama 3.1)")
 
 # --- Sekmeli Arayüz Tasarımı ---
 tab1, tab2, tab3 = st.tabs(["💬 AI Öğretmen ile Sohbet", "📚 Kelime Laboratuvarı (SRS)", "🎯 Günlük Görevler"])
@@ -55,7 +55,7 @@ with tab1:
     # Kullanıcı Mesaj Girişi
     if prompt := st.chat_input("Almanca bir yazı yazın... (Örn: Heute habe ich viel gearbeitet.)"):
         if not client:
-            st.error("Lütfen önce Groq API Anahtarınızı sol menüden girin veya Render'da 'GROQ_API_KEY' environment variable'ını ayarlayın!")
+            st.error("Lütfen önce Groq API Anahtarınızı sol menüden girin!")
         else:
             # Kullanıcı mesajını ekle
             st.session_state.messages.append({"role": "user", "content": prompt})
@@ -68,10 +68,10 @@ with tab1:
                 full_response = ""
                 
                 try:
-                    # Groq API Çağrısı
+                    # Güncel ve aktif Groq modeli kullanılıyor
                     response = client.chat.completions.create(
                         messages=st.session_state.messages,
-                        model="llama3-8b-8192", 
+                        model="llama-3.1-8b-instant", 
                         stream=True,
                     )
                     
@@ -91,7 +91,6 @@ with tab2:
     st.subheader("Aralıklı Tekrar Sistemi (SRS)")
     st.write("Bugün tekrar etmeniz gereken kelimeler:")
     
-    # Örnek Kelime Veri Tablosu
     words_data = [
         {"Kelime": "die Entscheidung", "Anlamı": "Karar", "Seviye": "B1", "Durum": "Bugün Tekrar Et"},
         {"Kelime": "verantwortlich", "Anlamı": "Sorumlu", "Seviye": "B2", "Durum": "3 Gün Sonra"},
