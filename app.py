@@ -4,7 +4,7 @@ import os
 
 # --- Sayfa Konfigürasyonu ---
 st.set_page_config(
-    page_title="Almanca B2 Yolculuğu",
+    page_title="Almanca A1-C2 Dil Koçu",
     page_icon="🇩🇪",
     layout="wide"
 )
@@ -18,30 +18,64 @@ if not api_key:
 
 client = Groq(api_key=api_key) if api_key else None
 
-# --- Yan Menü (Sidebar) & İstatistikler ---
-st.sidebar.title("📊 İlerleme Paneli")
+# --- Yan Menü (Sidebar) & Kur İlerleme Paneli ---
+st.sidebar.title("📊 Kur ve İlerleme Paneli")
 st.sidebar.markdown("---")
+
+# Seviye Seçimi (A1'den C2'ye)
+current_level = st.sidebar.selectbox("Mevcut Hedef / Kur Seç", ["A1 Kurulum", "A2 Temel", "B1 Orta", "B2 İleri (Hedef)", "C1 Uzman", "C2 Anadil"])
+
+# Kur İlerleme Durumu
+if current_level == "A1 Kurulum":
+    progress_val = 0.15
+    st.sidebar.info("A1 Seviyesi: Temel tanışma, günlük ifadeler.")
+elif current_level == "A2 Temel":
+    progress_val = 0.35
+    st.sidebar.info("A2 Seviyesi: Basit cümleler, yakın geçmiş.")
+elif current_level == "B1 Orta":
+    progress_val = 0.60
+    st.sidebar.info("B1 Seviyesi: Olayları anlatma, fikir belirtme.")
+elif current_level == "B2 İleri (Hedef)":
+    progress_val = 0.85
+    st.sidebar.info("B2 Seviyesi: Akıcı diyalog, karmaşık metinler.")
+elif current_level == "C1 Uzman":
+    progress_val = 0.95
+    st.sidebar.info("C1 Seviyesi: Akademik ve profesyonel yetkinlik.")
+else:
+    progress_val = 1.0
+    st.sidebar.info("C2 Seviyesi: Kusursuz hakimiyet.")
+
+st.sidebar.write(f"**Kur İlerleme Durumu:**")
+st.sidebar.progress(progress_val)
 st.sidebar.metric(label="Günlük Seri (Streak)", value="5 Gün 🔥")
 st.sidebar.metric(label="Öğrenilen Kelime", value="142 / 3000")
 
-progress = 142 / 3000
-st.sidebar.write("**B2 Hedef Yüzdesi:**")
-st.sidebar.progress(progress)
-
 # --- Ana Ekran Başlığı ---
-st.title("🇩🇪 7/24 Almanca B2 Öğrenme Asistanı")
-st.caption("Arayüz üzerinden pratik yapın, hatalarınızı anında düzeltin. (Altyapı: Groq GPT-OSS)")
+st.title("🇩🇪 Akıllı Almanca Dil Koçu (A1 ➔ C2)")
+st.caption("Açıklamaları Türkçe, pratikleri Almanca olan size özel kademeli koçluk sistemi.")
 
 # --- Sekmeli Arayüz Tasarımı ---
-tab1, tab2, tab3 = st.tabs(["💬 AI Öğretmen ile Sohbet", "📚 Kelime Laboratuvarı (SRS)", "🎯 Günlük Görevler"])
+tab1, tab2, tab3 = st.tabs(["💬 Rehberli AI Eğitmen", "📚 Kelime Laboratuvarı (SRS)", "🎯 Kur Görevleri"])
 
-# --- TAB 1: AI Sohbet ve Düzeltme Ekranı ---
+# --- TAB 1: AI Sohbet ve Türkçe Açıklamalı Düzeltme ---
 with tab1:
-    st.subheader("Almanca Pratik ve Anında Gramer Düzeltme")
+    st.subheader("Aktif Pratik ve Anlaşılır Hata Düzeltme")
     
+    # Yeni ve Türkçe açıklamalı sistem promptu
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "system", "content": "Sen Alman bir öğretmensin. Öğrencin B1-B2 seviyesine ulaşmaya çalışıyor. Bütün cevaplarını tamamen Almanca olarak vermelisin. Eğer kullanıcı Almanca gramer, cümle yapısı veya kelime hatası yaparsa, yanıtına muhakkak hatayı düzelterek başla. (Örnek format: '❌ Hata: [kullanıcının yazdığı] | ✅ Doğru: [doğru hali]'). Düzeltmeyi yaptıktan sonra sohbete devam et."}
+            {
+                "role": "system", 
+                "content": (
+                    "Sen çok sabırlı, samimi ve profesyonel bir Almanca dil eğitmenisin. "
+                    "Öğrencin Almanca'yı yeni öğreniyor ve açıklamaları kesinlikle TÜRKÇE istiyor. "
+                    "Öğrenci sana Almanca bir cümle yazdığında şu formata kesinlikle uy:\n"
+                    "1. ❌ **Hatalı Cümle:** Kullanıcının yazdığı.\n"
+                    "2. ✅ **Doğru Cihaz/Cümle:** Doğru Almanca hali.\n"
+                    "3. 💡 **Türkçe Açıklama:** Bu kuralın neden böyle olduğunu, kelime dizilimini veya grameri TÜRKÇE olarak çok net ve basit bir dille açıkla.\n"
+                    "4. 🎯 **Sıradaki Görev:** Öğrencinin bu kuralı pekiştirmesi için Türkçe yönlendirmeyle mini bir pratik cümlesi kurmasını iste."
+                )
+            }
         ]
 
     for msg in st.session_state.messages:
@@ -49,7 +83,7 @@ with tab1:
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
 
-    if prompt := st.chat_input("Almanca bir yazı yazın... (Örn: Heute habe ich viel gearbeitet.)"):
+    if prompt := st.chat_input("Almanca bir cümle yazın veya Türkçe sorun... (Örn: Ich habe gestern arbeiten.)"):
         if not client:
             st.error("Lütfen önce Groq API Anahtarınızı sol menüden girin!")
         else:
@@ -62,7 +96,6 @@ with tab1:
                 full_response = ""
                 
                 try:
-                    # Yeni bulduğun model ile çağrı
                     response = client.chat.completions.create(
                         messages=st.session_state.messages,
                         model="openai/gpt-oss-120b",
@@ -83,18 +116,18 @@ with tab1:
 # --- TAB 2: Kelime Laboratuvarı ---
 with tab2:
     st.subheader("Aralıklı Tekrar Sistemi (SRS)")
-    st.write("Bugün tekrar etmeniz gereken kelimeler:")
+    st.write("Seçtiğiniz kura ait tekrar etmeniz gereken kelimeler:")
     
     words_data = [
-        {"Kelime": "die Entscheidung", "Anlamı": "Karar", "Seviye": "B1", "Durum": "Bugün Tekrar Et"},
-        {"Kelime": "verantwortlich", "Anlamı": "Sorumlu", "Seviye": "B2", "Durum": "3 Gün Sonra"},
-        {"Kelime": "beeinflussen", "Anlamı": "Etkilemek", "Seviye": "B2", "Durum": "Öğrenildi"},
+        {"Kelime": "die Arbeit", "Anlamı": "İş", "Seviye": "A1", "Durum": "Öğrenildi"},
+        {"Kelime": "entscheiden", "Anlamı": "Karar vermek", "Seviye": "B1", "Durum": "Bugün Tekrar Et"},
+        {"Kelime": "die Maßnahme", "Anlamı": "Önlem / Tedbir", "Seviye": "B2", "Durum": "Yeni"},
     ]
     st.table(words_data)
 
 # --- TAB 3: Günlük Görevler ---
 with tab3:
-    st.subheader("Bugünün B2 Hedefleri")
-    st.checkbox("10 yeni B2 seviye kelime ezberle", value=True)
-    st.checkbox("AI Öğretmen ile en az 5 dakika yazılı sohbet et", value=False)
-    st.checkbox("1 adet B2 Paragraf Okuması yap", value=False)
+    st.subheader("Kur Atlama Görevleri")
+    st.checkbox("Seçilen kur seviyesine uygun 10 temel kelimeyi ezberle", value=True)
+    st.checkbox("Eğitmene Türkçe açıklamalı en az 3 farklı cümle gönder", value=False)
+    st.checkbox("Geçmiş zaman (Präteritum / Perfekt) kurallarını tekrar et", value=False)
