@@ -2,12 +2,11 @@ import streamlit as st
 from groq import Groq
 import os
 import sqlite3
-import re
 from datetime import datetime, timedelta
 from gtts import gTTS
-import base64
+import io
 
-# --- 1. VERİTABANI (DATABASE) KURULUMU VE GÜNCELLEMESİ ---
+# --- 1. VERİTABANI VE HAZIR A1 KELİME PAKETİ ---
 def init_db():
     conn = sqlite3.connect('dil_akademisi.db', check_same_thread=False)
     c = conn.cursor()
@@ -21,16 +20,11 @@ def init_db():
             seviye TEXT,
             ease_factor REAL DEFAULT 2.5,
             interval INTEGER DEFAULT 1,
-            next_review DATE
+            next_review DATE,
+            ornek_de TEXT DEFAULT '',
+            ornek_tr TEXT DEFAULT ''
         )
     ''')
-    
-    # Yeni eklenen "Örnek Cümle" sütunlarını veritabanını silmeden ekleme (Migration)
-    c.execute("PRAGMA table_info(vocabulary)")
-    columns = [col[1] for col in c.fetchall()]
-    if 'ornek_de' not in columns:
-        c.execute("ALTER TABLE vocabulary ADD COLUMN ornek_de TEXT DEFAULT ''")
-        c.execute("ALTER TABLE vocabulary ADD COLUMN ornek_tr TEXT DEFAULT ''")
     
     # Kullanıcı İstatistikleri
     c.execute('''
@@ -42,11 +36,41 @@ def init_db():
         )
     ''')
     
-    # Tablo boşsa örnek veri ekle
+    # İstatistik Tablosu Boşsa Doldur
     c.execute("SELECT COUNT(*) FROM stats")
     if c.fetchone()[0] == 0:
         bugun = datetime.now().date()
         c.execute("INSERT INTO stats (id, streak, last_login, total_xp) VALUES (1, 1, ?, 0)", (bugun,))
+    
+    # KELİME TABLOSU BOŞSA HAZIR A1 PAKETİNİ YÜKLE
+    c.execute("SELECT COUNT(*) FROM vocabulary")
+    if c.fetchone()[0] == 0:
+        bugun = datetime.now().date()
+        a1_kelimeler = [
+            ("Hallo", "Merhaba", "A1", "Hallo, wie geht es dir?", "Merhaba, nasılsın?"),
+            ("Danke", "Teşekkürler", "A1", "Danke für deine Hilfe.", "Yardımın için teşekkürler."),
+            ("bitte", "Lütfen / Rica ederim", "A1", "Ein Kaffee, bitte.", "Bir kahve, lütfen."),
+            ("Entschuldigung", "Özür dilerim", "A1", "Entschuldigung, wo ist der Bahnhof?", "Afedersiniz, tren istasyonu nerede?"),
+            ("Ja", "Evet", "A1", "Ja, das stimmt.", "Evet, bu doğru."),
+            ("Nein", "Hayır", "A1", "Nein, ich habe keine Zeit.", "Hayır, zamanım yok."),
+            ("der Mann", "Adam", "A1", "Der Mann liest ein Buch.", "Adam bir kitap okuyor."),
+            ("die Frau", "Kadın", "A1", "Die Frau trinkt Wasser.", "Kadın su içiyor."),
+            ("das Kind", "Çocuk", "A1", "Das Kind spielt im Garten.", "Çocuk bahçede oynuyor."),
+            ("das Haus", "Ev", "A1", "Das Haus ist sehr groß.", "Ev çok büyük."),
+            ("das Auto", "Araba", "A1", "Er kauft ein neues Auto.", "O yeni bir araba alıyor."),
+            ("das Wasser", "Su", "A1", "Ich trinke kaltes Wasser.", "Ben soğuk su içiyorum."),
+            ("arbeiten", "Çalışmak", "A1", "Ich arbeite jeden Tag.", "Ben her gün çalışıyorum."),
+            ("lernen", "Öğrenmek", "A1", "Wir lernen Deutsch.", "Biz Almanca öğreniyoruz."),
+            ("sprechen", "Konuşmak", "A1", "Sprichst du Englisch?", "İngilizce konuşuyor musun?"),
+            ("verstehen", "Anlamak", "A1", "Ich verstehe dich nicht.", "Seni anlamıyorum."),
+            ("groß", "Büyük", "A1", "Das Zimmer ist groß.", "Oda büyük."),
+            ("klein", "Küçük", "A1", "Der Hund ist klein.", "Köpek küçük."),
+            ("gut", "İyi", "A1", "Das Essen schmeckt gut.", "Yemek iyi."),
+            ("schlecht", "Kötü", "A1", "Das Wetter ist heute schlecht.", "Hava bugün kötü.")
+        ]
+        for kelime in a1_kelimeler:
+            c.execute("INSERT INTO vocabulary (almanca, turkce, seviye, next_review, ornek_de, ornek_tr) VALUES (?, ?, ?, ?, ?, ?)", 
+                      (kelime[0], kelime[1], kelime[2], bugun, kelime[3], kelime[4]))
     
     conn.commit()
     return conn
@@ -54,7 +78,7 @@ def init_db():
 conn = init_db()
 c = conn.cursor()
 
-# --- Günlük Giriş ve Streak Kontrolü ---
+# --- Günlük Giriş, XP ve Streak ---
 bugun = datetime.now().date()
 c.execute("SELECT streak, last_login, total_xp FROM stats WHERE id=1")
 stat_row = c.fetchone()
@@ -77,19 +101,7 @@ def add_xp(amount):
     c.execute("UPDATE stats SET total_xp=? WHERE id=1", (total_xp,))
     conn.commit()
 
-# --- Sesli Okuma (TTS) Fonksiyonu ---
-def get_audio_player(text, lang='de'):
-    try:
-        tts = gTTS(text, lang=lang)
-        tts.save("temp.mp3")
-        with open("temp.mp3", "rb") as f:
-            data = f.read()
-        b64 = base64.b64encode(data).decode()
-        return f'<audio controls style="height:35px;"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>'
-    except:
-        return ""
-
-# --- Sayfa Konfigürasyonu ---
+# --- Sayfa Konfigürasyonu ve CSS ---
 st.set_page_config(page_title="Almanca Görsel & Interaktif Akademi", page_icon="🇩🇪", layout="wide")
 
 st.markdown("""
@@ -100,26 +112,25 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- API Anahtarı ---
 api_key = os.getenv("GROQ_API_KEY")
 if not api_key:
     api_key = st.sidebar.text_input("Groq API Key", type="password")
 client = Groq(api_key=api_key) if api_key else None
 
-# --- Yan Menü (Sidebar) ve İlerleme Barı ---
+# --- Yan Menü: Seviye Barı ---
 st.sidebar.title("🗺️ Müfredat ve Yol Haritası")
 st.sidebar.markdown("---")
 
 levels = ["A1 - Temel Yapılar", "A2 - Günlük Yaşam", "B1 - Olaylar", "B2 - Profesyonel Akıcılık", "C1 - Uzmanlık", "C2 - Anadil"]
 selected_level = st.sidebar.selectbox("Hedef Kur Seçin:", levels)
 
-# İlerleme (XP) Barı Hesaplama
+# 1000 XP'de bir kur atlama mantığı
 xp_per_level = 1000
 current_level_progress = (total_xp % xp_per_level) / xp_per_level
 remaining_xp = xp_per_level - (total_xp % xp_per_level)
 
 st.sidebar.progress(current_level_progress, text=f"Seviye İlerlemesi: %{int(current_level_progress*100)}")
-st.sidebar.caption(f"Bir sonraki kura geçmek için {remaining_xp} XP kaldı.")
+st.sidebar.caption(f"Bir sonraki seviyeye geçmek için {remaining_xp} XP kaldı.")
 
 if st.sidebar.button("🔄 Sohbeti ve Dersi Sıfırla"):
     st.session_state.messages = []
@@ -129,11 +140,11 @@ st.sidebar.markdown("---")
 st.sidebar.metric(label="Toplam Tecrübe", value=f"{total_xp} XP 🌟")
 st.sidebar.metric(label="Günlük Seri (Streak)", value=f"{current_streak} Gün 🔥")
 
-# --- Ana Ekran ---
 st.title("🇩🇪 İnteraktif & Görsel Almanca Akademisi")
 
-tab1, tab2 = st.tabs(["🏛️ Canlandırmalı Ders Odası", "🗂️ Dönen Kelime Kartları (Flashcards)"])
+tab1, tab2 = st.tabs(["🏛️ Canlandırmalı Ders Odası", "🗂️ Hazır A1 Kelime Kartları"])
 
+# --- TAB 1: Canlandırmalı Ders (Sesli) ---
 with tab1:
     if "messages" not in st.session_state or not st.session_state.messages:
         st.session_state.messages = [
@@ -144,9 +155,7 @@ with tab1:
                     f"Öğrenci şu an '{selected_level}' kurunda.\n"
                     "1. BİLGİ BOMBARDIMANI YASAK: Her seferinde SADECE BİR kalıp öğret.\n"
                     "2. GÖRSEL DİYALOG: Öğrettiğin kalıbı, iki kişi konuşuyormuş gibi emojilerle canlandır.\n"
-                    "3. MİKRO TEST: Canlandırmadan sonra tek bir pratik sorusu sor.\n"
-                    "4. OTOMATİK KELİME KAYDI: Öğrettiğin ana kelimeyi (veya kalıbı) mutlaka mesajının en sonuna tam olarak şu formatta ekle: "
-                    "[KELİME: kelime_buraya | ANLAMI: türkçe_anlamı_buraya | ÖRNEK_DE: almanca_örnek_cümle | ÖRNEK_TR: türkçe_örnek_çeviri]"
+                    "3. MİKRO TEST: Canlandırmadan sonra tek bir pratik sorusu sor ve onay verene kadar ilerleme."
                 )
             }
         ]
@@ -176,78 +185,55 @@ if prompt := st.chat_input("Mesajınızı buraya yazın..."):
                             full_response += chunk.choices[0].delta.content
                             response_placeholder.markdown(full_response + "▌")
                     
-                    # Cümleyi okutmak için buton/audio oluştur
-                    audio_html = get_audio_player(full_response)
-                    
-                    response_placeholder.markdown(full_response + f"<br>{audio_html}", unsafe_allow_html=True)
+                    response_placeholder.markdown(full_response)
                     st.session_state.messages.append({"role": "assistant", "content": full_response})
                     
-                    # Doğru cevap verildiyse XP ver
                     if "✅" in full_response or "doğru" in full_response.lower() or "harika" in full_response.lower():
                         add_xp(25)
                         st.success("🎉 +25 XP Kazandın!")
-                    
-                    # Regex ile Otomatik Kelime Yakalama
-                    match = re.search(r"\[KELİME:\s*(.*?)\s*\|\s*ANLAMI:\s*(.*?)\s*\|\s*ÖRNEK_DE:\s*(.*?)\s*\|\s*ÖRNEK_TR:\s*(.*?)\]", full_response, re.IGNORECASE)
-                    if match:
-                        st.session_state.new_word = {
-                            "almanca": match.group(1).strip(),
-                            "turkce": match.group(2).strip(),
-                            "ornek_de": match.group(3).strip(),
-                            "ornek_tr": match.group(4).strip()
-                        }
+                        
+                    # Stremalit'in kendi yerleşik ses oynatıcısı (In-memory, hatasız çalışır)
+                    try:
+                        tts = gTTS(text=full_response, lang='de')
+                        sound_fp = io.BytesIO()
+                        tts.write_to_fp(sound_fp)
+                        st.audio(sound_fp, format='audio/mp3')
+                    except Exception as e:
+                        st.caption(f"Ses yüklenemedi: {e}")
+
                 except Exception as e:
                     st.error(f"API Hatası: {e}")
 
-    # Yakalanan kelimeyi veritabanına kaydetme butonu
-    if "new_word" in st.session_state:
-        nw = st.session_state.new_word
-        with tab1:
-            st.info(f"💡 Yeni Kalıp Yakalandı: **{nw['almanca']}**")
-            if st.button("💾 Bu Kelimeyi Kartlara Ekle (+10 XP)"):
-                c.execute("INSERT INTO vocabulary (almanca, turkce, seviye, next_review, ornek_de, ornek_tr) VALUES (?, ?, ?, ?, ?, ?)", 
-                          (nw['almanca'], nw['turkce'], selected_level, bugun, nw['ornek_de'], nw['ornek_tr']))
-                conn.commit()
-                add_xp(10)
-                del st.session_state.new_word
-                st.rerun()
-
-# --- TAB 2: Dönen Flashcard Sistemi ---
+# --- TAB 2: Dönen Flashcard Sistemi (Hazır Liste) ---
 with tab2:
-    st.subheader("🗂️ Öğrendiğin Kelimeler (Flashcards)")
+    st.subheader("🗂️ A1 Seviyesi Temel Kelimeler")
     st.write("Kartın arkasını görmek için 'Çevir' butonuna basın.")
     
-    c.execute("SELECT id, almanca, turkce, ornek_de, ornek_tr FROM vocabulary ORDER BY id DESC")
+    c.execute("SELECT id, almanca, turkce, ornek_de, ornek_tr FROM vocabulary ORDER BY id ASC")
     kayitlar = c.fetchall()
     
-    if not kayitlar:
-        st.info("Henüz kaydedilmiş bir kelimeniz yok. Ders odasında pratik yaparak kelime avlayın!")
-    else:
-        # Kartları 3'lü sütun ızgarasında göster
-        cols = st.columns(3)
-        for index, satir in enumerate(kayitlar):
-            col = cols[index % 3]
-            card_id = f"card_{satir[0]}"
+    cols = st.columns(3)
+    for index, satir in enumerate(kayitlar):
+        col = cols[index % 3]
+        card_id = f"card_{satir[0]}"
+        
+        if card_id not in st.session_state:
+            st.session_state[card_id] = "front"
             
-            if card_id not in st.session_state:
-                st.session_state[card_id] = "front"
-                
-            with col:
-                st.markdown('<div class="flashcard">', unsafe_allow_html=True)
-                if st.session_state[card_id] == "front":
-                    # KARTIN ÖN YÜZÜ (Almanca)
-                    st.markdown(f"<h3 style='color:#f8fafc;'>{satir[1]}</h3>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='color:#94a3b8; font-style:italic;'>\"{satir[3]}\"</p>", unsafe_allow_html=True)
-                    if st.button("🔄 Çevir", key=f"fbtn_{satir[0]}"):
-                        st.session_state[card_id] = "back"
-                        st.rerun()
-                else:
-                    # KARTIN ARKA YÜZÜ (Türkçe)
-                    st.markdown(f"<h3 style='color:#fbbf24;'>{satir[2]}</h3>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='color:#cbd5e1; font-style:italic;'>\"{satir[4]}\"</p>", unsafe_allow_html=True)
-                    if st.button("🔄 Geri Dön", key=f"bbtn_{satir[0]}"):
-                        st.session_state[card_id] = "front"
-                        st.rerun()
-                st.markdown('</div><br>', unsafe_allow_html=True)
+        with col:
+            st.markdown('<div class="flashcard">', unsafe_allow_html=True)
+            if st.session_state[card_id] == "front":
+                st.markdown(f"<h3 style='color:#f8fafc;'>{satir[1]}</h3>", unsafe_allow_html=True)
+                st.markdown(f"<p style='color:#94a3b8; font-style:italic;'>\"{satir[3]}\"</p>", unsafe_allow_html=True)
+                if st.button("🔄 Çevir", key=f"fbtn_{satir[0]}"):
+                    st.session_state[card_id] = "back"
+                    st.rerun()
+            else:
+                st.markdown(f"<h3 style='color:#fbbf24;'>{satir[2]}</h3>", unsafe_allow_html=True)
+                st.markdown(f"<p style='color:#cbd5e1; font-style:italic;'>\"{satir[4]}\"</p>", unsafe_allow_html=True)
+                if st.button("🔄 Geri Dön", key=f"bbtn_{satir[0]}"):
+                    st.session_state[card_id] = "front"
+                    st.rerun()
+            st.markdown('</div><br>', unsafe_allow_html=True)
 
 conn.close()
