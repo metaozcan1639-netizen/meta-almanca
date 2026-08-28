@@ -4,10 +4,30 @@ import os
 
 # --- Sayfa Konfigürasyonu ---
 st.set_page_config(
-    page_title="Almanca Rehberli Öğrenme & Test Sistemi",
+    page_title="Almanca Görsel & Interaktif Akademi",
     page_icon="🇩🇪",
     layout="wide"
 )
+
+# --- Özel CSS ile Görsel Kart Tasarımları ---
+st.markdown("""
+<style>
+    .info-card {
+        background-color: #1e293b;
+        border-left: 5px solid #3b82f6;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+    .rule-box {
+        background-color: #0f172a;
+        border: 1px solid #334155;
+        padding: 15px;
+        border-radius: 8px;
+        color: #f8fafc;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # --- API Anahtarı ve Model Başlatma ---
 api_key = os.getenv("GROQ_API_KEY")
@@ -18,39 +38,47 @@ if not api_key:
 
 client = Groq(api_key=api_key) if api_key else None
 
-# --- Yan Menü (Sidebar) & Kur İlerleme Paneli ---
-st.sidebar.title("📊 Kur ve İlerleme Paneli")
+# --- Yan Menü (Sidebar) & Müfredat Paneli ---
+st.sidebar.title("🗺️ Müfredat ve İlerleme")
 st.sidebar.markdown("---")
 
-current_level = st.sidebar.selectbox("Öğrenmek İstediğin Kur/Seviye", ["A1 Kurulum", "A2 Temel", "B1 Orta", "B2 İleri (Hedef)", "C1 Uzman", "C2 Anadil"])
+current_level = st.sidebar.selectbox("Aktif Kur / Seviye", ["A1 - Temel Yapılar", "A2 - Günlük Hayat", "B1 - Olaylar & Fikirler", "B2 - Profesyonel Akıcılık", "C1/C2 - Uzmanlık"])
 
-st.sidebar.info("💡 **Önce Öğren, Sonra Test Ol:** Sistem her konuyu detaylıca Türkçe anlatır, ardından seni test eder.")
+st.sidebar.markdown("""
+<div class="rule-box">
+<b>🎯 Akademi Disiplini:</b><br>
+• Görsel Kartlar & Tablolar<br>
+• Sokratik Mantık Yürütme<br>
+• Gerçek Hayat Senaryoları
+</div>
+""", unsafe_allow_html=True)
+
 st.sidebar.metric(label="Günlük Seri (Streak)", value="5 Gün 🔥")
-st.sidebar.metric(label="Öğrenilen Kelime", value="142 / 3000")
+st.sidebar.metric(label="Tamamlanan Senaryo", value="12 / 150")
 
 # --- Ana Ekran Başlığı ---
-st.title("🇩🇪 Adım Adım Almanca: Önce Ders, Sonra Sınav")
-st.caption(f"Aktif Seviye: {current_level} | Konular sindirilerek ve test edilerek işlenir.")
+st.title("🇩🇪 İnteraktif & Görsel Almanca Akademisi")
+st.caption(f"Aktif Modül: {current_level} | Düz yazı yok, mantık kurma ve senaryo temelli öğrenme var.")
 
 # --- Sekmeli Arayüz Tasarımı ---
-tab1, tab2, tab3 = st.tabs(["📖 Ders ve Sınav Odası", "📚 Kelime Laboratuvarı (SRS)", "🎯 Kur Görevleri"])
+tab1, tab2, tab3 = st.tabs(["🏛️ Görsel Ders & Senaryo Odası", "📊 Kelime Haritası & SRS", "📋 Kur Sınavları"])
 
-# --- TAB 1: AI Sohbet ve Öğret-Test Sistemi ---
+# --- TAB 1: Görsel Ders ve Senaryo Odası ---
 with tab1:
-    st.subheader("Birebir Özel Almanca Eğitmeni")
+    st.subheader("Görsel Anlatımlı Özel Eğitmen")
     
-    # Yeni Öğret-Test Sistem Promptu
+    # Gelişmiş Eğitim ve Görsel Sistem Promptu
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {
                 "role": "system", 
                 "content": (
-                    "Sen çok titiz ve disiplinli bir Almanca öğretmenisin. Öğrencin Almanca'yı hiç bilmiyor "
-                    "ve konuları adım adım, sindirerek öğrenmek istiyor. Kesinlikle şu kurala uymalısın:\n\n"
-                    "1. **Önce Ders (Anlatım):** Öğrenci bir konu istediğinde veya soru sorduğunda, konuyu en temelden Türkçe olarak, bol örnekle ve anlaşılır şekilde detaylıca anlat.\n"
-                    "2. **Sonra Test (Sınav):** Konu anlatımı biter bitmez, öğrencinin öğrendiklerini pekiştirmesi için hemen oracıkta 1 veya 2 adet mini test sorusu (çeviri görevi veya boşluk doldurma) sor ve öğrencinin cevap vermesini bekle.\n"
-                    "3. **Değerlendirme:** Öğrenci test sorusunu yanıtladığında cevabını Türkçe olarak değerlendir, doğruysa tebrik et, yanlışsa düzelt ve bir sonraki konuya ya da teste geç.\n\n"
-                    "Şu an ilk açılış için öğrenciye hangi seviyeden (örneğin A1 alfabe, artikeller veya günlük selamlaşma ile mi) başlamak istediğini sor ve kısa bir giriş yap."
+                    "Sen çok yenilikçi, görsel hafızayı kullanan ve senaryo tabanlı öğreten üst düzey bir Almanca koçusun. "
+                    "Öğrenci düz yazılardan ve sıkıcı testlerden sıkılıyor. Bu yüzden kuralları anlatırken kesinlikle şunları yap:\n\n"
+                    "1. **Görsel Tablolar ve Bloklar:** Konuyu anlatırken Markdown tabloları, emoji kartları ve görsel şemalar kullan. Asla düz uzun paragraf yazma.\n"
+                    "2. **Mantık Kodlaması:** Kelimenin veya gramerin neden öyle olduğunu mantıksal bir hikaye veya görsel benzetmeyle açıkla (Türkçe olarak).\n"
+                    "3. **Gerçek Hayat Senaryosu:** Sadece kural anlatıp bırakma; hemen ardından 'Şu an Berlin'desin ve trende bilet kontrolü yapılıyor, memura şu cümleyi kurman lazım' gibi interaktif bir senaryo görevi ver.\n\n"
+                    "İlk mesajda öğrenciye hangi senaryo dünyasından (günlük yaşam, iş hayatı veya seyahat) başlamak istediğini sorarak harika bir görsel karşılama yap."
                 )
             }
         ]
@@ -60,7 +88,7 @@ with tab1:
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
 
-    if prompt := st.chat_input("Örn: 'Bana A1 seviyesinden bugünkü dersi başlat ve anlat.' yazabilirsiniz."):
+    if prompt := st.chat_input("Örn: 'Bana Akkusativ ve Dativ arasındaki farkı görsel tablolarla ve senaryoyla anlat.' yazabilirsin."):
         if not client:
             st.error("Lütfen önce Groq API Anahtarınızı sol menüden girin!")
         else:
@@ -90,19 +118,21 @@ with tab1:
                 except Exception as e:
                     st.error(f"API Bağlantı Hatası: {e}")
 
-# --- TAB 2: Kelime Laboratuvarı ---
+# --- TAB 2: Kelime Haritası ---
 with tab2:
-    st.subheader("Aralıklı Tekrar Sistemi (SRS)")
-    st.write("Bu kurda ezberlemen gereken temel kelimeler:")
+    st.subheader("Görsel Kelime Ağacı ve SRS")
+    st.write("Bağlam ve kategorilere göre ayrılmış aktif kelime havuzunuz:")
     
-    words_data = [
-        {"Kelime": "der Tisch", "Anlamı": "Masa", "Seviye": "A1", "Durum": "Öğreniliyor"},
-        {"Kelime": "das Haus", "Anlamı": "Ev", "Seviye": "A1", "Durum": "Yeni"},
+    vocab_data = [
+        {"Kategori": "Seyahat & Ulaşım", "Almanca": "der Fahrplan", "Türkçe": "Tarife / Sefer Saatleri", "Durum": "Aktif Öğreniliyor"},
+        {"Kategori": "İş & Kurumsal", "Almanca": "die Besprechung", "Türkçe": "Toplantı", "Durum": "Tekrar Edilecek"},
+        {"Kategori": "Günlük Yaşam", "Anlamı": "die Kaffeepause", "Türkçe": "Kahve Molası", "Durum": "Pekiştirildi"}
     ]
-    st.table(words_data)
+    st.table(vocab_data)
 
-# --- TAB 3: Günlük Görevler ---
+# --- TAB 3: Kur Sınavları ---
 with tab3:
-    st.subheader("Ders ve Sınav Görevleri")
-    st.checkbox("Bugünkü ders anlatımını dikkatle oku ve not al", value=False)
-    st.checkbox("Öğretmenin sorduğu mini test sorularını eksiksiz yanıtla", value=False)
+    st.subheader("Senaryo Bazlı Değerlendirme Sınavları")
+    st.info("Bu modülde çoktan seçmeli ezberler yerine tamamen kurgusal senaryo başarı testleri yer alır.")
+    st.checkbox("Senaryo 1: Restoranda yanlış gelen yemeği kibarca değiştirme görevi", value=False)
+    st.checkbox("Senaryo 2: Otelde oda arızası için resepsiyona şikayet maili yazma", value=False)
