@@ -30,7 +30,7 @@ st.sidebar.progress(progress)
 
 # --- Ana Ekran Başlığı ---
 st.title("🇩🇪 7/24 Almanca B2 Öğrenme Asistanı")
-st.caption("Arayüz üzerinden pratik yapın, hatalarınızı anında düzeltin. (Altyapı: Groq Llama 3.1)")
+st.caption("Arayüz üzerinden pratik yapın, hatalarınızı anında düzeltin. (Altyapı: Groq GPT-OSS)")
 
 # --- Sekmeli Arayüz Tasarımı ---
 tab1, tab2, tab3 = st.tabs(["💬 AI Öğretmen ile Sohbet", "📚 Kelime Laboratuvarı (SRS)", "🎯 Günlük Görevler"])
@@ -62,10 +62,10 @@ with tab1:
                 full_response = ""
                 
                 try:
-                    # En güncel çalışan Groq modeli
+                    # Yeni bulduğun model ile çağrı
                     response = client.chat.completions.create(
                         messages=st.session_state.messages,
-                        model="llama-3.1-8b-instant", 
+                        model="openai/gpt-oss-120b",
                         stream=True,
                     )
                     
@@ -78,7 +78,7 @@ with tab1:
                     st.session_state.messages.append({"role": "assistant", "content": full_response})
                 
                 except Exception as e:
-                    st.error(f"Bir hata oluştu: {e}")
+                    st.error(f"API Bağlantı Hatası: {e}")
 
 # --- TAB 2: Kelime Laboratuvarı ---
 with tab2:
