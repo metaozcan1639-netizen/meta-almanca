@@ -9,9 +9,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Özel CSS ---
+# --- Özel CSS (Arayüz ve Sohbet Kutusu Ayarları) ---
 st.markdown("""
 <style>
+    /* Kur kutusu stili */
     .rule-box {
         background-color: #0f172a;
         border: 1px solid #334155;
@@ -19,6 +20,14 @@ st.markdown("""
         border-radius: 8px;
         color: #f8fafc;
         font-size: 14px;
+    }
+    
+    /* Sohbet Girdi Kutusunu Sağ Alta Daraltıp Sabitleme */
+    [data-testid="stChatInput"] {
+        max-width: 600px !important; 
+        margin-left: auto !important; 
+        margin-right: 20px !important;
+        border-radius: 12px !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -38,7 +47,7 @@ st.sidebar.markdown("---")
 
 selected_level = st.sidebar.selectbox(
     "Önce Kur Seçin:", 
-    ["A1 - Temel Yapılar (Sıfırdan)", "A2 - Günlük Yaşam", "B1 - Olaylar & Fikirler", "B2 - Profesyonel Akıcılık", "C1/C2 - Uzmanlık"]
+    ["A1 - Temel Yapılar (Sıfırdan)", "A2 - Günlük Yaşam", "B1 - Olaylar & Fikirler", "B2 - Profesyonel Akıcılık"]
 )
 
 if st.sidebar.button("🔄 Sohbeti ve Dersi Sıfırla"):
@@ -48,7 +57,7 @@ if st.sidebar.button("🔄 Sohbeti ve Dersi Sıfırla"):
 st.sidebar.markdown(f"""
 <div class="rule-box">
 <b>📌 Seçilen Kur:</b> {selected_level}<br><br>
-<b>Eğitim Modeli:</b> Onaylı İlerleme. Bir konuyu öğrenip testini geçmeden asla bir sonraki adıma geçilmez.
+<b>Eğitim Modeli:</b> Mikro-Öğrenme. Sadece 1 kalıp öğretilir, karakterlerle canlandırılır ve test edilir.
 </div>
 """, unsafe_allow_html=True)
 
@@ -57,26 +66,28 @@ st.sidebar.metric(label="Günlük Seri (Streak)", value="5 Gün 🔥")
 
 # --- Ana Ekran Başlığı ---
 st.title("🇩🇪 İnteraktif & Görsel Almanca Akademisi")
-st.caption(f"Aktif Modül: {selected_level} | Konuyu Anla ➔ Testi Çöz ➔ Onayı Al ➔ İlerle")
+st.caption(f"Aktif Modül: {selected_level} | Bilgi bombardımanı yok, adım adım görsel canlandırma var.")
 
 # --- Sekmeli Arayüz Tasarımı ---
-tab1, tab2, tab3 = st.tabs(["🏛️ Ders ve Pratik Odası", "📊 Kelime Haritası", "📋 Kur Sınavları"])
+tab1, tab2 = st.tabs(["🏛️ Canlandırmalı Ders Odası", "📋 Kur Sınavları"])
 
 with tab1:
-    st.subheader(f"Disiplinli Eğitmen Odası")
     
-    # 📌 KATI ONAY SİSTEMLİ PROMPT
+    # 📌 MİKRO-ÖĞRENME VE GÖRSEL CANLANDIRMA PROMPTU
     if "messages" not in st.session_state or not st.session_state.messages:
         st.session_state.messages = [
             {
                 "role": "system", 
                 "content": (
-                    f"Sen çok disiplinli, adım adım ilerleyen bir Almanca öğretmenisin. Öğrenci şu an '{selected_level}' kurunda.\n\n"
-                    "ŞU 3 KURALA KESİNLİKLE UYACAKSIN:\n"
-                    "1. KİLİT SİSTEMİ: Öğrenciye bir konuyu anlattıktan sonra MUTLAKA o konuyla ilgili bir pratik sorusu sor (Örn: 'Şimdi sen çevir: ...'). "
-                    "Öğrenci bu soruya DOĞRU CEVAP vermeden asla bir sonraki konuya geçme!\n"
-                    "2. ADIM ADIM: İlk mesajında sadece kurun yol haritasını ver ve 'Hazırsan 1. Adım olan ... ile başlayalım mı?' diye onayı iste.\n"
-                    "3. ONAY MEKANİZMASI: Öğrenci testi doğru çözerse '✅ Harika, bu konuyu başarıyla öğrendin! Şimdi 2. Adıma geçiyoruz' diyerek ilerle. Yanlış çözerse konuyu farklı bir örnekle tekrar anlat ve yeni bir test sor."
+                    f"Sen çok disiplinli, 'Mikro-Öğrenme' (Micro-learning) metodunu uygulayan bir Almanca öğretmenisin. "
+                    f"Öğrenci şu an '{selected_level}' kurunda.\n\n"
+                    "ŞU KATI KURALLARA KESİNLİKLE UYACAKSIN:\n"
+                    "1. BİLGİ BOMBARDIMANI YASAK: Asla uzun listeler veya tablolar verme! Her seferinde SADECE BİR veya İKİ kelime/kalıp öğret. "
+                    "(Örn: Bir derste sadece 'Adın ne?' sorusu ve cevabı işlenir).\n"
+                    "2. GÖRSEL DİYALOG (CANLANDIRMA): Öğrettiğin o tek kalıbı, EKRANDA İKİ KİŞİ KONUŞUYORMUŞ GİBİ emojilerle canlandır. "
+                    "(Örn: 🧑🏻 Ali: Hallo! Wie heißt du? | 👩🏼 Anna: Ich heiße Anna.). Başka hiçbir gereksiz detay verme.\n"
+                    "3. MİKRO TEST: Diyaloğu verdikten hemen sonra öğrenciye tek bir pratik sorusu sor (Örn: 'Şimdi sen adını söyle').\n"
+                    "4. ONAY KİLİDİ: Öğrenci o mini-testi doğru yapmadan asla yeni bir kalıba veya senaryoya geçme! Yanlış yaparsa düzeltip tekrar sor."
                 )
             }
         ]
@@ -89,14 +100,13 @@ with tab1:
                 with st.chat_message(msg["role"]):
                     st.write(msg["content"])
 
-# --- Mesaj Yazma Alanı (Tüm ekranın en altına, sağ panele sabitlenir) ---
-if prompt := st.chat_input("Mesajınızı buraya yazın (Örn: 'Hazırım, ilk derse başlayalım')..."):
+# --- Mesaj Yazma Alanı (Özel CSS ile Sağ Alta Sabitlendi) ---
+if prompt := st.chat_input("Mesajınızı buraya yazın (Örn: 'Hazırım, ilk dersi canlandıralım')..."):
     if not client:
         st.error("Lütfen önce sol menüden Groq API Anahtarınızı girin!")
     else:
         st.session_state.messages.append({"role": "user", "content": prompt})
         
-        # Sadece Tab 1 aktifken mesajların akması için (Streamlit yapısı gereği)
         with tab1:
             with st.chat_message("user"):
                 st.write(prompt)
@@ -125,10 +135,5 @@ if prompt := st.chat_input("Mesajınızı buraya yazın (Örn: 'Hazırım, ilk d
 
 # --- Diğer Sekmeler ---
 with tab2:
-    st.subheader("Görsel Kelime Ağacı")
-    st.write(f"Seçilen kur ({selected_level}) kelimeleri:")
-    st.info("Bu alan ileride veritabanına bağlanarak öğrendiğiniz kelimeleri otomatik tutacaktır.")
-
-with tab3:
     st.subheader("Kur Atlama Değerlendirmeleri")
-    st.info("Tüm temel modülleri tamamlayıp öğretmenden onay aldığınızda buradaki final sınavları açılacaktır.")
+    st.info("Canlandırmalı dersleri tamamladığınızda buradaki pratik senaryo sınavları aktifleşecektir.")
