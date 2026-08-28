@@ -30,7 +30,7 @@ st.sidebar.progress(progress)
 
 # --- Ana Ekran Başlığı ---
 st.title("🇩🇪 7/24 Almanca B2 Öğrenme Asistanı")
-st.caption("Arayüz üzerinden pratik yapın, hatalarınızı anında düzeltin. (Altyapı: Groq Llama 3.3)")
+st.caption("Arayüz üzerinden pratik yapın, hatalarınızı anında düzeltin. (Altyapı: Groq Llama 3)")
 
 # --- Sekmeli Arayüz Tasarımı ---
 tab1, tab2, tab3 = st.tabs(["💬 AI Öğretmen ile Sohbet", "📚 Kelime Laboratuvarı (SRS)", "🎯 Günlük Görevler"])
@@ -62,10 +62,9 @@ with tab1:
                 full_response = ""
                 
                 try:
-                    # En güncel ve kararlı Groq modeli
                     response = client.chat.completions.create(
                         messages=st.session_state.messages,
-                        model="llama-3.3-70b-versatile", 
+                        model="llama3-8b", 
                         stream=True,
                     )
                     
