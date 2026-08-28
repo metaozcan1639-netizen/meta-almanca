@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Özel CSS (Arayüzü Düzenleme ve Temizleme) ---
+# --- Özel CSS ---
 st.markdown("""
 <style>
     .rule-box {
@@ -32,7 +32,7 @@ if not api_key:
 
 client = Groq(api_key=api_key) if api_key else None
 
-# --- Yan Menü (Sidebar) & Kur Seçim Paneli ---
+# --- Yan Menü (Sidebar) ---
 st.sidebar.title("🗺️ Müfredat ve Yol Haritası")
 st.sidebar.markdown("---")
 
@@ -41,7 +41,6 @@ selected_level = st.sidebar.selectbox(
     ["A1 - Temel Yapılar (Sıfırdan)", "A2 - Günlük Yaşam", "B1 - Olaylar & Fikirler", "B2 - Profesyonel Akıcılık", "C1/C2 - Uzmanlık"]
 )
 
-# Kur değiştiğinde veya sıfırlama istendiğinde hafızayı yenilemek için buton
 if st.sidebar.button("🔄 Sohbeti ve Dersi Sıfırla"):
     st.session_state.messages = []
     st.rerun()
@@ -49,56 +48,56 @@ if st.sidebar.button("🔄 Sohbeti ve Dersi Sıfırla"):
 st.sidebar.markdown(f"""
 <div class="rule-box">
 <b>📌 Seçilen Kur:</b> {selected_level}<br><br>
-<b>Strateji:</b> Önce bu kurda ne öğreneceğimizi planlıyoruz, temelden başlayıp adım adım ilerliyoruz.
+<b>Eğitim Modeli:</b> Onaylı İlerleme. Bir konuyu öğrenip testini geçmeden asla bir sonraki adıma geçilmez.
 </div>
 """, unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 st.sidebar.metric(label="Günlük Seri (Streak)", value="5 Gün 🔥")
-st.sidebar.metric(label="Tamamlanan Görev", value="12 / 150")
 
 # --- Ana Ekran Başlığı ---
 st.title("🇩🇪 İnteraktif & Görsel Almanca Akademisi")
-st.caption(f"Aktif Modül: {selected_level} | Temelden İlerleyen Yapılandırılmış Eğitim Sistemi")
+st.caption(f"Aktif Modül: {selected_level} | Konuyu Anla ➔ Testi Çöz ➔ Onayı Al ➔ İlerle")
 
 # --- Sekmeli Arayüz Tasarımı ---
-tab1, tab2, tab3 = st.tabs(["🏛️ Ders ve Pratik Odası", "📊 Kelime Haritası & SRS", "📋 Kur Sınavları"])
+tab1, tab2, tab3 = st.tabs(["🏛️ Ders ve Pratik Odası", "📊 Kelime Haritası", "📋 Kur Sınavları"])
 
-# --- TAB 1: Ders ve Pratik Odası ---
 with tab1:
-    st.subheader(f"Hedef Kur: {selected_level}")
+    st.subheader(f"Disiplinli Eğitmen Odası")
     
-    # Sohbet Geçmişi ve Kur Bazlı Sistem Komutu
+    # 📌 KATI ONAY SİSTEMLİ PROMPT
     if "messages" not in st.session_state or not st.session_state.messages:
         st.session_state.messages = [
             {
                 "role": "system", 
                 "content": (
-                    f"Sen çok disiplinli, görsel hafızayı kullanan ve pedagojik yaklaşımı mükemmel olan bir Almanca öğretmenisin. "
-                    f"Öğrenci şu an '{selected_level}' kurunu seçti.\n\n"
-                    "KESİN KURALLARIN:\n"
-                    "1. Asla direkt karmaşık konulara veya rastgele senaryolara atlama.\n"
-                    "2. İlk mesajda, seçilen bu kurda (örneğin A1 ise sıfırdan harfler, artikeller, temel tanışma; B2 ise ileri düzey yapılar) "
-                    "adım adım nasıl bir yol izleyeceğimizi Türkçe olarak özetle.\n"
-                    "3. Öğrenciye bu kurun **ilk temel dersini** görsel tablolar eşliğinde başlatmak isteyip istemediğini sor ve onayını bekle."
+                    f"Sen çok disiplinli, adım adım ilerleyen bir Almanca öğretmenisin. Öğrenci şu an '{selected_level}' kurunda.\n\n"
+                    "ŞU 3 KURALA KESİNLİKLE UYACAKSIN:\n"
+                    "1. KİLİT SİSTEMİ: Öğrenciye bir konuyu anlattıktan sonra MUTLAKA o konuyla ilgili bir pratik sorusu sor (Örn: 'Şimdi sen çevir: ...'). "
+                    "Öğrenci bu soruya DOĞRU CEVAP vermeden asla bir sonraki konuya geçme!\n"
+                    "2. ADIM ADIM: İlk mesajında sadece kurun yol haritasını ver ve 'Hazırsan 1. Adım olan ... ile başlayalım mı?' diye onayı iste.\n"
+                    "3. ONAY MEKANİZMASI: Öğrenci testi doğru çözerse '✅ Harika, bu konuyu başarıyla öğrendin! Şimdi 2. Adıma geçiyoruz' diyerek ilerle. Yanlış çözerse konuyu farklı bir örnekle tekrar anlat ve yeni bir test sor."
                 )
             }
         ]
-        # İlk açılışta öğretmenin kur yol haritasını çizmesi için tetikleyici ekleyelim
-        # (Streamlit ilk yüklemede system promptunu işler)
 
-    # Sohbet kutusundaki mesajları ekrana yazdır (System hariç)
-    for msg in st.session_state.messages:
-        if msg["role"] != "system":
-            with st.chat_message(msg["role"]):
-                st.write(msg["content"])
+    # Mesajları Ekrana Yazdırma Alanı
+    chat_container = st.container()
+    with chat_container:
+        for msg in st.session_state.messages:
+            if msg["role"] != "system":
+                with st.chat_message(msg["role"]):
+                    st.write(msg["content"])
 
-    # Kullanıcı Girdi Alanı (Ekranın en altında temiz bir şekilde yer alır)
-    if prompt := st.chat_input("Örn: 'Seçtiğim kurun yol haritasını çıkar ve ilk dersten başlayalım.' yazın..."):
-        if not client:
-            st.error("Lütfen önce sol menüden Groq API Anahtarınızı girin!")
-        else:
-            st.session_state.messages.append({"role": "user", "content": prompt})
+# --- Mesaj Yazma Alanı (Tüm ekranın en altına, sağ panele sabitlenir) ---
+if prompt := st.chat_input("Mesajınızı buraya yazın (Örn: 'Hazırım, ilk derse başlayalım')..."):
+    if not client:
+        st.error("Lütfen önce sol menüden Groq API Anahtarınızı girin!")
+    else:
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        
+        # Sadece Tab 1 aktifken mesajların akması için (Streamlit yapısı gereği)
+        with tab1:
             with st.chat_message("user"):
                 st.write(prompt)
 
@@ -124,19 +123,12 @@ with tab1:
                 except Exception as e:
                     st.error(f"API Bağlantı Hatası: {e}")
 
-# --- TAB 2: Kelime Haritası ---
+# --- Diğer Sekmeler ---
 with tab2:
-    st.subheader("Görsel Kelime Ağacı ve SRS")
-    st.write(f"Seçilen kur ({selected_level}) için temel kelime havuzu:")
-    
-    vocab_data = [
-        {"Seviye": "A1 Temel", "Almanca": "das Jahr", "Türkçe": "Yıl", "Durum": "Sıradaki Ders"},
-        {"Seviye": "A1 Temel", "Almanca": "die Schule", "Türkçe": "Okul", "Durum": "Öğreniliyor"},
-    ]
-    st.table(vocab_data)
+    st.subheader("Görsel Kelime Ağacı")
+    st.write(f"Seçilen kur ({selected_level}) kelimeleri:")
+    st.info("Bu alan ileride veritabanına bağlanarak öğrendiğiniz kelimeleri otomatik tutacaktır.")
 
-# --- TAB 3: Kur Sınavları ---
 with tab3:
     st.subheader("Kur Atlama Değerlendirmeleri")
-    st.info("Seçtiğiniz kurun tüm temel modülleri tamamlandığında buradaki pratik senaryo sınavları aktifleşecektir.")
-    st.checkbox("Modül 1 Temel Kavrama Testi", value=False)
+    st.info("Tüm temel modülleri tamamlayıp öğretmenden onay aldığınızda buradaki final sınavları açılacaktır.")
