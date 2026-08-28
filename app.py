@@ -24,14 +24,13 @@ st.sidebar.markdown("---")
 st.sidebar.metric(label="Günlük Seri (Streak)", value="5 Gün 🔥")
 st.sidebar.metric(label="Öğrenilen Kelime", value="142 / 3000")
 
-# B2 Hedef İlerleme Çubuğu
 progress = 142 / 3000
 st.sidebar.write("**B2 Hedef Yüzdesi:**")
 st.sidebar.progress(progress)
 
 # --- Ana Ekran Başlığı ---
 st.title("🇩🇪 7/24 Almanca B2 Öğrenme Asistanı")
-st.caption("Arayüz üzerinden pratik yapın, hatalarınızı anında düzeltin. (Altyapı: Groq Llama 3.1)")
+st.caption("Arayüz üzerinden pratik yapın, hatalarınızı anında düzeltin. (Altyapı: Groq Llama 3.3)")
 
 # --- Sekmeli Arayüz Tasarımı ---
 tab1, tab2, tab3 = st.tabs(["💬 AI Öğretmen ile Sohbet", "📚 Kelime Laboratuvarı (SRS)", "🎯 Günlük Görevler"])
@@ -40,38 +39,33 @@ tab1, tab2, tab3 = st.tabs(["💬 AI Öğretmen ile Sohbet", "📚 Kelime Labora
 with tab1:
     st.subheader("Almanca Pratik ve Anında Gramer Düzeltme")
     
-    # Sohbet Geçmişi Hafızası
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {"role": "system", "content": "Sen Alman bir öğretmensin. Öğrencin B1-B2 seviyesine ulaşmaya çalışıyor. Bütün cevaplarını tamamen Almanca olarak vermelisin. Eğer kullanıcı Almanca gramer, cümle yapısı veya kelime hatası yaparsa, yanıtına muhakkak hatayı düzelterek başla. (Örnek format: '❌ Hata: [kullanıcının yazdığı] | ✅ Doğru: [doğru hali]'). Düzeltmeyi yaptıktan sonra sohbete devam et."}
         ]
 
-    # Eski Mesajları Ekrana Yazdır
     for msg in st.session_state.messages:
         if msg["role"] != "system":
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
 
-    # Kullanıcı Mesaj Girişi
     if prompt := st.chat_input("Almanca bir yazı yazın... (Örn: Heute habe ich viel gearbeitet.)"):
         if not client:
             st.error("Lütfen önce Groq API Anahtarınızı sol menüden girin!")
         else:
-            # Kullanıcı mesajını ekle
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.write(prompt)
 
-            # AI Yanıtı Oluştur
             with st.chat_message("assistant"):
                 response_placeholder = st.empty()
                 full_response = ""
                 
                 try:
-                    # Güncel ve aktif Groq modeli kullanılıyor
+                    # En güncel ve kararlı Groq modeli
                     response = client.chat.completions.create(
                         messages=st.session_state.messages,
-                        model="llama-3.1-8b-instant", 
+                        model="llama-3.3-70b-versatile", 
                         stream=True,
                     )
                     
