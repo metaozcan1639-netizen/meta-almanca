@@ -3,13 +3,14 @@ from datetime import datetime, timedelta
 import sqlite3
 import os
 import re
+import io
 from groq import Groq
+from gtts import gTTS
 
 # --- 1. VERİTABANI BAĞLANTISI VE KURULUM ---
 def init_db():
     conn = sqlite3.connect('dil_akademisi.db', check_same_thread=False)
     c = conn.cursor()
-    # Kelimeler
     c.execute('''
         CREATE TABLE IF NOT EXISTS vocabulary (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -18,7 +19,6 @@ def init_db():
             next_review DATE, ornek_de TEXT DEFAULT '', ornek_tr TEXT DEFAULT ''
         )
     ''')
-    # Kullanıcı İstatistikleri
     c.execute('''
         CREATE TABLE IF NOT EXISTS stats (
             id INTEGER PRIMARY KEY,
@@ -121,15 +121,11 @@ if sayfa == "🏠 Ana Ekran (Dashboard)":
     col1, col2, col3 = st.columns(3)
     with col1: st.markdown(f'<div class="metric-box"><div class="header-text">Mevcut Kur</div><div class="sub-text">{st.session_state.seviye}</div></div>', unsafe_allow_html=True)
     with col2: st.markdown(f'<div class="metric-box"><div class="header-text">İlerleme</div><div class="sub-text">%15 (Sonraki kura 850 XP)</div></div>', unsafe_allow_html=True)
-    with col3: st.markdown(f'<div class="metric-box"><div class="header-text">Bugünkü Görevler</div><div class="sub-text">0/3 Tamamlandı</div></div>', unsafe_allow_html=True)
+    with col3: st.markdown(f'<div class="metric-box"><div class="header-text">Durum</div><div class="sub-text">Akademi Aktif 🟢</div></div>', unsafe_allow_html=True)
     
     st.write("---")
-    st.subheader("📍 Müfredat Ağacı (A1)")
-    with st.expander("Modül 1: Tanışma ve Temel İfadeler", expanded=True):
-        st.checkbox("Alfabe ve Telaffuz Kuralları", value=True)
-        st.checkbox("Selamlaşma ve Kendini Tanıtma", value=False)
-    with st.expander("Modül 2: Temel Gramer (İsimler ve Artikeller)"):
-        st.checkbox("Der, Die, Das Mantığı")
+    st.subheader("📍 Modüller")
+    st.info("Sol menüden beceri odalarını seçerek çalışmaya başlayabilirsin. Okuma, Dinleme, Yazma ve Konuşma odalarının hepsi tam entegre çalışmaktadır.")
 
 elif sayfa == "📖 Okuma (Lesen)":
     st.title("📖 Okuma Odası (Lesen)")
@@ -143,14 +139,11 @@ elif sayfa == "📖 Okuma (Lesen)":
     if st.button("📝 Yeni Okuma Parçası ve Soru Getir", use_container_width=True):
         if not client: st.error("API Key gerekli!")
         else:
-            with st.spinner("Eğitmen seviyene uygun bir metin hazırlıyor..."):
-                prompt = f"Sen profesyonel bir Almanca öğretmenisin. Öğrenci {st.session_state.seviye} seviyesinde, dili YENİ öğreniyor. Bu seviyeye TAMAMEN uygun, sadece 2-3 cümleden oluşan çok basit bir Almanca metin yaz. Altına da metinle ilgili çok basit bir Almanca soru sor. Format TIPA TIP şu olmalı:\n\nMETİN: [Almanca metin buraya]\nÇEVİRİ: [Almanca metnin ve sorunun tam Türkçe çevirisi buraya]\nSORU: [Almanca soru buraya]"
+            with st.spinner("Metin hazırlanıyor..."):
+                prompt = f"Sen profesyonel bir Almanca öğretmenisin. Öğrenci {st.session_state.seviye} seviyesinde, dili yeni öğreniyor. Bu seviyeye uygun, 2 cümleden oluşan basit bir Almanca metin yaz. Altına da basit bir Almanca soru sor. Format ŞU OLMALI:\n\nMETİN: [Almanca metin]\nÇEVİRİ: [Türkçe çevirisi]\nSORU: [Almanca soru]"
                 try:
-                    response = client.chat.completions.create(
-                        messages=[{"role": "user", "content": prompt}], model="openai/gpt-oss-120b"
-                    )
+                    response = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model="openai/gpt-oss-120b")
                     icerik = response.choices[0].message.content
-                    
                     metin_match = re.search(r"METİN:\s*(.*?)(?=ÇEVİRİ:)", icerik, re.DOTALL)
                     ceviri_match = re.search(r"ÇEVİRİ:\s*(.*?)(?=SORU:)", icerik, re.DOTALL)
                     soru_match = re.search(r"SORU:\s*(.*)", icerik, re.DOTALL)
@@ -160,28 +153,25 @@ elif sayfa == "📖 Okuma (Lesen)":
                     st.session_state.okuma_soru = soru_match.group(1).strip() if soru_match else ""
                     st.session_state.okuma_durum = "okuyor"
                 except Exception as e:
-                    st.error(f"API Hatası: {e}")
+                    st.error(f"Hata: {e}")
 
     if st.session_state.okuma_durum in ["okuyor", "cevaplandi"]:
         st.markdown(f'<div class="metric-box"><h5 style="color:#f8fafc;">🇩🇪 {st.session_state.okuma_metni}</h5><br><b style="color:#fbbf24;">❓ Soru: {st.session_state.okuma_soru}</b></div>', unsafe_allow_html=True)
         
-        with st.expander("🇹🇷 Metnin ve Sorunun Çevirisini Göster (Zorlanırsan Tıkla)"):
+        with st.expander("🇹🇷 Metnin ve Sorunun Çevirisini Göster"):
             st.info(st.session_state.okuma_ceviri)
         
         if st.session_state.okuma_durum == "okuyor":
             cevap = st.text_input("Yukarıdaki soruya cevabını TÜRKÇE olarak yaz:")
             if st.button("Kontrol Et", type="primary"):
                 if cevap:
-                    with st.spinner("Öğretmen cevabını inceliyor..."):
-                        kontrol_prompt = f"Öğrencinin okuduğu metin: {st.session_state.okuma_metni}\nSoru: {st.session_state.okuma_soru}\nÖğrencinin verdiği TÜRKÇE cevap: '{cevap}'.\n\nÖğrenci dili yeni öğreniyor. Bu yüzden cevabı Türkçe verdi. Anlamsal olarak metne göre doğru mu anlıyor? Eğer doğru anladıysa, yanıtının en sonuna mutlaka 'DOĞRU' kelimesini büyük harflerle yaz ve nedenini Türkçe kısaca açıkla."
+                    with st.spinner("Öğretmen inceliyor..."):
+                        kontrol_prompt = f"Metin: {st.session_state.okuma_metni}\nSoru: {st.session_state.okuma_soru}\nÖğrencinin TÜRKÇE cevabı: '{cevap}'.\nDoğru mu anlamış? Doğruysa sonuna 'DOĞRU' yaz, kısaca açıkla."
                         try:
-                            feedback_resp = client.chat.completions.create(
-                                messages=[{"role": "user", "content": kontrol_prompt}], model="openai/gpt-oss-120b"
-                            )
+                            feedback_resp = client.chat.completions.create(messages=[{"role": "user", "content": kontrol_prompt}], model="openai/gpt-oss-120b")
                             hoca_yorumu = feedback_resp.choices[0].message.content
                             st.session_state.okuma_durum = "cevaplandi"
                             st.session_state.son_yorum = hoca_yorumu
-                            
                             if "DOĞRU" in hoca_yorumu:
                                 add_xp(25)
                                 st.session_state.son_sonuc = "basarili"
@@ -191,45 +181,162 @@ elif sayfa == "📖 Okuma (Lesen)":
                         except Exception as e:
                             st.error(f"Hata: {e}")
                 else:
-                    st.warning("Lütfen kontrol etmeden önce bir cevap yaz.")
+                    st.warning("Lütfen cevap yaz.")
                     
         elif st.session_state.okuma_durum == "cevaplandi":
-            if st.session_state.son_sonuc == "basarili":
-                st.success("🎉 Tebrikler! Metni doğru anladın. +25 XP kazandın.")
-            else:
-                st.error("Cevabında bazı eksikler veya hatalar var.")
-            st.info(f"👩‍🏫 **Öğretmenin Notu:**\n\n{st.session_state.son_yorum.replace('DOĞRU', '')}")
+            if st.session_state.son_sonuc == "basarili": st.success("🎉 Tebrikler! +25 XP")
+            else: st.error("Cevabında eksikler var.")
+            st.info(f"👩‍🏫 **Not:**\n\n{st.session_state.son_yorum.replace('DOĞRU', '')}")
+
+elif sayfa == "🎧 Dinleme (Hören)":
+    st.title("🎧 Dinleme Odası (Hören)")
+    st.caption("Ekranda metin yok! Duyduğunu anlama pratiği.")
+    
+    if "dinleme_metni" not in st.session_state: st.session_state.dinleme_metni = ""
+    if "dinleme_ceviri" not in st.session_state: st.session_state.dinleme_ceviri = ""
+    if "dinleme_durum" not in st.session_state: st.session_state.dinleme_durum = "bekliyor"
+
+    if st.button("🎧 Yeni Ses Getir", use_container_width=True):
+        if not client: st.error("API Key gerekli!")
+        else:
+            with st.spinner("Ses dosyası hazırlanıyor..."):
+                prompt = f"Sen Almanca öğretmenisin. Öğrenci {st.session_state.seviye} seviyesinde. SADECE 1 cümlelik çok basit bir dinleme metni yaz. Format ŞART:\nMETİN: [Almanca cümle]\nÇEVİRİ: [Türkçe çeviri]"
+                try:
+                    response = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model="openai/gpt-oss-120b")
+                    icerik = response.choices[0].message.content
+                    metin_match = re.search(r"METİN:\s*(.*?)(?=ÇEVİRİ:)", icerik, re.DOTALL)
+                    ceviri_match = re.search(r"ÇEVİRİ:\s*(.*)", icerik, re.DOTALL)
+                    
+                    st.session_state.dinleme_metni = metin_match.group(1).strip() if metin_match else "Hallo, wie geht es dir?"
+                    st.session_state.dinleme_ceviri = ceviri_match.group(1).strip() if ceviri_match else "Merhaba, nasılsın?"
+                    st.session_state.dinleme_durum = "dinliyor"
+                except Exception as e:
+                    st.error(f"Hata: {e}")
+
+    if st.session_state.dinleme_durum in ["dinliyor", "cevaplandi"]:
+        try:
+            tts = gTTS(text=st.session_state.dinleme_metni, lang='de')
+            sound_fp = io.BytesIO()
+            tts.write_to_fp(sound_fp)
+            st.audio(sound_fp, format='audio/mp3')
+        except Exception as e:
+            st.warning("Ses oluşturulamadı. gTTS kütüphanesini kontrol edin.")
+
+        with st.expander("📝 Gizli Transkripti ve Çeviriyi Göster (Zorlanırsan Tıkla)"):
+            st.write(f"**🇩🇪 Almanca:** {st.session_state.dinleme_metni}")
+            st.write(f"**🇹🇷 Türkçe:** {st.session_state.dinleme_ceviri}")
+            
+        if st.session_state.dinleme_durum == "dinliyor":
+            cevap = st.text_input("Duyduğun cümleyi ister Almanca ister Türkçe çevirisiyle yaz:")
+            if st.button("Kontrol Et", type="primary"):
+                if cevap:
+                    with st.spinner("Öğretmen inceliyor..."):
+                        kontrol_prompt = f"Orijinal Metin: {st.session_state.dinleme_metni}\nÇevirisi: {st.session_state.dinleme_ceviri}\nÖğrencinin duyup yazdığı: '{cevap}'.\nDoğru mu anlamış? Doğruysa sonuna 'DOĞRU' yaz, kısaca Türkçe açıkla."
+                        feedback_resp = client.chat.completions.create(messages=[{"role": "user", "content": kontrol_prompt}], model="openai/gpt-oss-120b")
+                        hoca_yorumu = feedback_resp.choices[0].message.content
+                        st.session_state.dinleme_durum = "cevaplandi"
+                        st.session_state.son_dinleme_yorum = hoca_yorumu
+                        if "DOĞRU" in hoca_yorumu:
+                            add_xp(30)
+                            st.session_state.son_dinleme_sonuc = "basarili"
+                        else:
+                            st.session_state.son_dinleme_sonuc = "hatali"
+                        st.rerun()
+                else:
+                    st.warning("Lütfen cevap yaz.")
+                    
+        elif st.session_state.dinleme_durum == "cevaplandi":
+            if st.session_state.son_dinleme_sonuc == "basarili": st.success("🎉 Kulağın çok iyi! +30 XP")
+            else: st.error("Tekrar dinlemelisin.")
+            st.info(f"👩‍🏫 **Not:**\n\n{st.session_state.son_dinleme_yorum.replace('DOĞRU', '')}")
+
+elif sayfa == "✍️ Yazma (Schreiben)":
+    st.title("✍️ Yazma Odası (Schreiben)")
+    st.caption("Sana verilen senaryoya göre Almanca yazılar yaz, hoca notlandırsın.")
+
+    if "yazma_gorev" not in st.session_state: st.session_state.yazma_gorev = ""
+    if "yazma_durum" not in st.session_state: st.session_state.yazma_durum = "bekliyor"
+
+    if st.button("📝 Yeni Görev Getir", use_container_width=True):
+        if not client: st.error("API Key gerekli!")
+        else:
+            with st.spinner("Görev oluşturuluyor..."):
+                prompt = f"Öğrenci {st.session_state.seviye} seviyesinde. Ona pratik yapması için günlük hayattan basit bir YAZMA GÖREVİ ver. (Örn: 'Bir kafedesin, 1 kahve ve 1 su siparişi ver'). SADECE Türkçe olarak görevi yaz. Format: GÖREV: [görev metni]"
+                response = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model="openai/gpt-oss-120b")
+                st.session_state.yazma_gorev = response.choices[0].message.content.replace("GÖREV:", "").strip()
+                st.session_state.yazma_durum = "yaziyor"
+
+    if st.session_state.yazma_durum in ["yaziyor", "cevaplandi"]:
+        st.info(f"🎯 **Görev:** {st.session_state.yazma_gorev}")
+        
+        if st.session_state.yazma_durum == "yaziyor":
+            cevap = st.text_area("Cevabını ALMANCA olarak yaz:")
+            if st.button("Öğretmene Gönder", type="primary"):
+                if cevap:
+                    with st.spinner("Öğretmen okuyor..."):
+                        kontrol_prompt = f"Görev şuydu: {st.session_state.yazma_gorev}\nÖğrencinin yazdığı Almanca: '{cevap}'.\nÖğretmen gibi hatalarını düzelt, grameri Türkçe açıkla. Genel olarak anlaşılabiliyorsa sonuna 'DOĞRU' yaz."
+                        feedback_resp = client.chat.completions.create(messages=[{"role": "user", "content": kontrol_prompt}], model="openai/gpt-oss-120b")
+                        hoca_yorumu = feedback_resp.choices[0].message.content
+                        st.session_state.yazma_durum = "cevaplandi"
+                        st.session_state.son_yazma_yorum = hoca_yorumu
+                        if "DOĞRU" in hoca_yorumu:
+                            add_xp(35)
+                            st.session_state.son_yazma_sonuc = "basarili"
+                        else:
+                            st.session_state.son_yazma_sonuc = "hatali"
+                        st.rerun()
+                else:
+                    st.warning("Boş kağıt veremezsin!")
+                    
+        elif st.session_state.yazma_durum == "cevaplandi":
+            if st.session_state.son_yazma_sonuc == "basarili": st.success("🎉 Çok iyi ifade ettin! +35 XP")
+            else: st.error("Daha iyi olabilir, hatalarına dikkat et.")
+            st.info(f"👩‍🏫 **Öğretmenin Düzeltmeleri:**\n\n{st.session_state.son_yazma_yorum.replace('DOĞRU', '')}")
 
 elif sayfa == "🗣️ Konuşma (Sprechen)":
     st.title("🗣️ Konuşma Odası (Sprechen)")
-    st.caption("Gerçek hayat senaryoları ve interaktif sohbet.")
+    st.caption("Türkçe yardım isteyebilir veya diyaloğu sürdürebilirsin. Çeviriler gizlidir.")
     
     if "chat_messages" not in st.session_state:
         st.session_state.chat_messages = [
-            {"role": "system", "content": f"Sen profesyonel bir Almanca öğretmenisin. Öğrenci {st.session_state.seviye} seviyesinde. Ona kısa, günlük hayattan bir diyalog başlat. Sadece Almanca konuş ve her seferinde tek bir cümle kurup onun cevap vermesini bekle."}
+            {"role": "system", "content": f"Sen arkadaş canlısı, iki dilli (Türkçe-Almanca) bir öğretmensin. Öğrenci {st.session_state.seviye} seviyesinde. Ona kısa diyaloglar kuracaksın. YANIT FORMATIN ŞARTTIR:\nALMANCA: [Sadece Almanca cümle]\nÇEVİRİ: [Türkçe çevirisi veya Türkçe açıklama]. Eğer öğrenci senden Türkçe yardım isterse, 'ÇEVİRİ' kısmında ona Türkçe açıkla, 'ALMANCA' kısmında onu motive edecek basit bir Almanca cümle kur."}
         ]
+        # Yapay zekayı tetikleyip ilk soruyu sorduruyoruz
+        response = client.chat.completions.create(messages=st.session_state.chat_messages, model="openai/gpt-oss-120b")
+        st.session_state.chat_messages.append({"role": "assistant", "content": response.choices[0].message.content})
 
+    # Sohbet geçmişini çizdirme (Çevirileri ayırarak)
     for msg in st.session_state.chat_messages:
-        if msg["role"] != "system":
-            with st.chat_message(msg["role"]):
+        if msg["role"] == "assistant":
+            if "ÇEVİRİ:" in msg["content"]:
+                parts = msg["content"].split("ÇEVİRİ:")
+                almanca_kisim = parts[0].replace("ALMANCA:", "").strip()
+                turkce_kisim = parts[1].strip()
+                
+                with st.chat_message("assistant"):
+                    st.write(almanca_kisim)
+                    with st.expander("🇹🇷 Çeviriyi / Açıklamayı Göster"):
+                        st.info(turkce_kisim)
+            else:
+                with st.chat_message("assistant"):
+                    st.write(msg["content"])
+        elif msg["role"] == "user":
+            with st.chat_message("user"):
                 st.write(msg["content"])
 
-    if prompt := st.chat_input("Almanca cevap verin..."):
+    if prompt := st.chat_input("Almanca yaz veya Türkçe yardım iste..."):
         if not client: st.error("API Key gerekli!")
         else:
             st.session_state.chat_messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"): st.write(prompt)
-            with st.chat_message("assistant"):
-                resp_box = st.empty()
-                full_resp = ""
+            
+            with st.spinner("Hoca yazıyor..."):
                 try:
-                    stream = client.chat.completions.create(messages=st.session_state.chat_messages, model="openai/gpt-oss-120b", stream=True)
-                    for chunk in stream:
-                        if chunk.choices[0].delta.content:
-                            full_resp += chunk.choices[0].delta.content
-                            resp_box.markdown(full_resp + "▌")
-                    resp_box.markdown(full_resp)
+                    # Stream kapalı, arayüzün bozulmaması için cevabı tam alıp basıyoruz
+                    response = client.chat.completions.create(messages=st.session_state.chat_messages, model="openai/gpt-oss-120b")
+                    full_resp = response.choices[0].message.content
                     st.session_state.chat_messages.append({"role": "assistant", "content": full_resp})
+                    st.rerun()
                 except Exception as e:
                     st.error(f"Hata: {e}")
 
@@ -278,9 +385,5 @@ elif sayfa == "🗂️ Kelime Kartları":
                             st.session_state.kart_index += 1
                             st.session_state.kart_yuzu = "on"
                             st.rerun()
-
-elif sayfa in ["🎧 Dinleme (Hören)", "✍️ Yazma (Schreiben)"]:
-    st.title(sayfa)
-    st.info("Bu modülün yapay zeka entegrasyonu (Backend) şu an inşa ediliyor... 🛠️")
 
 conn.close()
