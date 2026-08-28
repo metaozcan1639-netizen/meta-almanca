@@ -9,22 +9,16 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Özel CSS ile Görsel Kart Tasarımları ---
+# --- Özel CSS (Arayüzü Düzenleme ve Temizleme) ---
 st.markdown("""
 <style>
-    .info-card {
-        background-color: #1e293b;
-        border-left: 5px solid #3b82f6;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-    }
     .rule-box {
         background-color: #0f172a;
         border: 1px solid #334155;
-        padding: 15px;
+        padding: 12px;
         border-radius: 8px;
         color: #f8fafc;
+        font-size: 14px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -33,64 +27,76 @@ st.markdown("""
 api_key = os.getenv("GROQ_API_KEY")
 
 if not api_key:
-    st.sidebar.warning("⚠️ Groq API Anahtarı girilmedi. Lütfen menüden giriniz.")
+    st.sidebar.warning("⚠️ Groq API Anahtarı girilmedi.")
     api_key = st.sidebar.text_input("Groq API Key (gsk_ ile başlar)", type="password")
 
 client = Groq(api_key=api_key) if api_key else None
 
-# --- Yan Menü (Sidebar) & Müfredat Paneli ---
-st.sidebar.title("🗺️ Müfredat ve İlerleme")
+# --- Yan Menü (Sidebar) & Kur Seçim Paneli ---
+st.sidebar.title("🗺️ Müfredat ve Yol Haritası")
 st.sidebar.markdown("---")
 
-current_level = st.sidebar.selectbox("Aktif Kur / Seviye", ["A1 - Temel Yapılar", "A2 - Günlük Hayat", "B1 - Olaylar & Fikirler", "B2 - Profesyonel Akıcılık", "C1/C2 - Uzmanlık"])
+selected_level = st.sidebar.selectbox(
+    "Önce Kur Seçin:", 
+    ["A1 - Temel Yapılar (Sıfırdan)", "A2 - Günlük Yaşam", "B1 - Olaylar & Fikirler", "B2 - Profesyonel Akıcılık", "C1/C2 - Uzmanlık"]
+)
 
-st.sidebar.markdown("""
+# Kur değiştiğinde veya sıfırlama istendiğinde hafızayı yenilemek için buton
+if st.sidebar.button("🔄 Sohbeti ve Dersi Sıfırla"):
+    st.session_state.messages = []
+    st.rerun()
+
+st.sidebar.markdown(f"""
 <div class="rule-box">
-<b>🎯 Akademi Disiplini:</b><br>
-• Görsel Kartlar & Tablolar<br>
-• Sokratik Mantık Yürütme<br>
-• Gerçek Hayat Senaryoları
+<b>📌 Seçilen Kur:</b> {selected_level}<br><br>
+<b>Strateji:</b> Önce bu kurda ne öğreneceğimizi planlıyoruz, temelden başlayıp adım adım ilerliyoruz.
 </div>
 """, unsafe_allow_html=True)
 
+st.sidebar.markdown("---")
 st.sidebar.metric(label="Günlük Seri (Streak)", value="5 Gün 🔥")
-st.sidebar.metric(label="Tamamlanan Senaryo", value="12 / 150")
+st.sidebar.metric(label="Tamamlanan Görev", value="12 / 150")
 
 # --- Ana Ekran Başlığı ---
 st.title("🇩🇪 İnteraktif & Görsel Almanca Akademisi")
-st.caption(f"Aktif Modül: {current_level} | Düz yazı yok, mantık kurma ve senaryo temelli öğrenme var.")
+st.caption(f"Aktif Modül: {selected_level} | Temelden İlerleyen Yapılandırılmış Eğitim Sistemi")
 
 # --- Sekmeli Arayüz Tasarımı ---
-tab1, tab2, tab3 = st.tabs(["🏛️ Görsel Ders & Senaryo Odası", "📊 Kelime Haritası & SRS", "📋 Kur Sınavları"])
+tab1, tab2, tab3 = st.tabs(["🏛️ Ders ve Pratik Odası", "📊 Kelime Haritası & SRS", "📋 Kur Sınavları"])
 
-# --- TAB 1: Görsel Ders ve Senaryo Odası ---
+# --- TAB 1: Ders ve Pratik Odası ---
 with tab1:
-    st.subheader("Görsel Anlatımlı Özel Eğitmen")
+    st.subheader(f"Hedef Kur: {selected_level}")
     
-    # Gelişmiş Eğitim ve Görsel Sistem Promptu
-    if "messages" not in st.session_state:
+    # Sohbet Geçmişi ve Kur Bazlı Sistem Komutu
+    if "messages" not in st.session_state or not st.session_state.messages:
         st.session_state.messages = [
             {
                 "role": "system", 
                 "content": (
-                    "Sen çok yenilikçi, görsel hafızayı kullanan ve senaryo tabanlı öğreten üst düzey bir Almanca koçusun. "
-                    "Öğrenci düz yazılardan ve sıkıcı testlerden sıkılıyor. Bu yüzden kuralları anlatırken kesinlikle şunları yap:\n\n"
-                    "1. **Görsel Tablolar ve Bloklar:** Konuyu anlatırken Markdown tabloları, emoji kartları ve görsel şemalar kullan. Asla düz uzun paragraf yazma.\n"
-                    "2. **Mantık Kodlaması:** Kelimenin veya gramerin neden öyle olduğunu mantıksal bir hikaye veya görsel benzetmeyle açıkla (Türkçe olarak).\n"
-                    "3. **Gerçek Hayat Senaryosu:** Sadece kural anlatıp bırakma; hemen ardından 'Şu an Berlin'desin ve trende bilet kontrolü yapılıyor, memura şu cümleyi kurman lazım' gibi interaktif bir senaryo görevi ver.\n\n"
-                    "İlk mesajda öğrenciye hangi senaryo dünyasından (günlük yaşam, iş hayatı veya seyahat) başlamak istediğini sorarak harika bir görsel karşılama yap."
+                    f"Sen çok disiplinli, görsel hafızayı kullanan ve pedagojik yaklaşımı mükemmel olan bir Almanca öğretmenisin. "
+                    f"Öğrenci şu an '{selected_level}' kurunu seçti.\n\n"
+                    "KESİN KURALLARIN:\n"
+                    "1. Asla direkt karmaşık konulara veya rastgele senaryolara atlama.\n"
+                    "2. İlk mesajda, seçilen bu kurda (örneğin A1 ise sıfırdan harfler, artikeller, temel tanışma; B2 ise ileri düzey yapılar) "
+                    "adım adım nasıl bir yol izleyeceğimizi Türkçe olarak özetle.\n"
+                    "3. Öğrenciye bu kurun **ilk temel dersini** görsel tablolar eşliğinde başlatmak isteyip istemediğini sor ve onayını bekle."
                 )
             }
         ]
+        # İlk açılışta öğretmenin kur yol haritasını çizmesi için tetikleyici ekleyelim
+        # (Streamlit ilk yüklemede system promptunu işler)
 
+    # Sohbet kutusundaki mesajları ekrana yazdır (System hariç)
     for msg in st.session_state.messages:
         if msg["role"] != "system":
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
 
-    if prompt := st.chat_input("Örn: 'Bana Akkusativ ve Dativ arasındaki farkı görsel tablolarla ve senaryoyla anlat.' yazabilirsin."):
+    # Kullanıcı Girdi Alanı (Ekranın en altında temiz bir şekilde yer alır)
+    if prompt := st.chat_input("Örn: 'Seçtiğim kurun yol haritasını çıkar ve ilk dersten başlayalım.' yazın..."):
         if not client:
-            st.error("Lütfen önce Groq API Anahtarınızı sol menüden girin!")
+            st.error("Lütfen önce sol menüden Groq API Anahtarınızı girin!")
         else:
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
@@ -121,18 +127,16 @@ with tab1:
 # --- TAB 2: Kelime Haritası ---
 with tab2:
     st.subheader("Görsel Kelime Ağacı ve SRS")
-    st.write("Bağlam ve kategorilere göre ayrılmış aktif kelime havuzunuz:")
+    st.write(f"Seçilen kur ({selected_level}) için temel kelime havuzu:")
     
     vocab_data = [
-        {"Kategori": "Seyahat & Ulaşım", "Almanca": "der Fahrplan", "Türkçe": "Tarife / Sefer Saatleri", "Durum": "Aktif Öğreniliyor"},
-        {"Kategori": "İş & Kurumsal", "Almanca": "die Besprechung", "Türkçe": "Toplantı", "Durum": "Tekrar Edilecek"},
-        {"Kategori": "Günlük Yaşam", "Anlamı": "die Kaffeepause", "Türkçe": "Kahve Molası", "Durum": "Pekiştirildi"}
+        {"Seviye": "A1 Temel", "Almanca": "das Jahr", "Türkçe": "Yıl", "Durum": "Sıradaki Ders"},
+        {"Seviye": "A1 Temel", "Almanca": "die Schule", "Türkçe": "Okul", "Durum": "Öğreniliyor"},
     ]
     st.table(vocab_data)
 
 # --- TAB 3: Kur Sınavları ---
 with tab3:
-    st.subheader("Senaryo Bazlı Değerlendirme Sınavları")
-    st.info("Bu modülde çoktan seçmeli ezberler yerine tamamen kurgusal senaryo başarı testleri yer alır.")
-    st.checkbox("Senaryo 1: Restoranda yanlış gelen yemeği kibarca değiştirme görevi", value=False)
-    st.checkbox("Senaryo 2: Otelde oda arızası için resepsiyona şikayet maili yazma", value=False)
+    st.subheader("Kur Atlama Değerlendirmeleri")
+    st.info("Seçtiğiniz kurun tüm temel modülleri tamamlandığında buradaki pratik senaryo sınavları aktifleşecektir.")
+    st.checkbox("Modül 1 Temel Kavrama Testi", value=False)
