@@ -38,8 +38,8 @@ st.markdown("""
     .native-label { font-size: 12px; color: #93c5fd; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 8px; display: block;}
     .native-text { font-size: 18px; font-weight: 400; font-style: italic;}
     
-    /* Eğitim Odası Tasarımı (YENİ) */
-    .lesson-box { background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; border-radius: 12px; padding: 25px; margin-bottom: 20px; border-top: 4px solid #8b5cf6;}
+    /* Eğitim Odası Tasarımı */
+    .lesson-box { background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; border-radius: 12px; padding: 35px; margin-bottom: 20px; border-top: 4px solid #8b5cf6; min-height: 400px;}
     
     /* Hatasız Kapsayıcılı Flashcard Tasarımı */
     .flashcard { 
@@ -67,7 +67,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 1. KATI CEFR KALİBRASYON MATRİSİ (YENİ)
+# 1. KATI CEFR KALİBRASYON MATRİSİ
 # ==========================================
 CEFR_RULES = {
     "A1.1": "SADECE en temel kelimeleri kullan. Yalnızca şimdiki zaman (Präsens) ve sein/haben fiillerini kullan. Asla karmaşık yan cümle (Nebensatz) kurma.",
@@ -97,11 +97,10 @@ def init_db():
         correct_streak INTEGER DEFAULT 0, last_reviewed DATE
     )''')
     
-    # Yeni Eklenti: Görsel Hafıza İçin Emoji Sütunu
     try:
         c.execute("ALTER TABLE vocabulary ADD COLUMN emoji TEXT DEFAULT '💠'")
     except sqlite3.OperationalError:
-        pass # Sütun zaten varsa hata vermesin
+        pass 
     
     c.execute('''CREATE TABLE IF NOT EXISTS stats (
         user_id INTEGER PRIMARY KEY,
@@ -125,26 +124,6 @@ def init_db():
     if c.fetchone()[0] == 0:
         bugun = datetime.now().date()
         c.execute("INSERT INTO stats (user_id, streak, last_login, total_xp, level) VALUES (1, 1, ?, 0, 'A1.1')", (bugun,))
-        
-        baslangic_kelimeleri = [
-            ("die Herausforderung", "Meydan Okuma / Zorluk", "B1.1", "Die neue Aufgabe ist eine echte Herausforderung.", "Yeni görev gerçek bir meydan okuma.", "🎯"),
-            ("unbedingt", "Kesinlikle / İlla ki", "A1.2", "Ich muss das unbedingt heute erledigen.", "Bunu bugün kesinlikle halletmeliyim.", "❗"),
-            ("der Erfolg", "Başarı", "A1.1", "Erfolg ist das Ergebnis harter Arbeit.", "Başarı sıkı çalışmanın sonucudur.", "🏆"),
-            ("enttäuscht", "Hayal Kırıklığına Uğramış", "B1.2", "Sie war von dem Ergebnis sehr enttäuscht.", "Sonuçtan çok hayal kırıklığına uğramıştı.", "😞"),
-            ("die Leidenschaft", "Tutku", "B2.1", "Er spricht mit großer Leidenschaft über seinen Beruf.", "Mesleği hakkında büyük bir tutkuyla konuşuyor.", "🔥"),
-            ("begeistert", "Heyecanlı / Coşkulu", "A2.2", "Ich bin begeistert von dieser Idee.", "Bu fikirden dolayı heyecanlıyım.", "🤩"),
-            ("die Wahrscheinlichkeit", "Olasılık", "B2.1", "Die Wahrscheinlichkeit eines Sieges ist hoch.", "Galibiyet olasılığı yüksek.", "🎲"),
-            ("entwickeln", "Geliştirmek", "B1.1", "Wir müssen neue Strategien entwickeln.", "Yeni stratejiler geliştirmeliyiz.", "📈"),
-            ("die Gewohnheit", "Alışkanlık", "A2.1", "Es ist schwer, alte Gewohnheiten aufzugeben.", "Eski alışkanlıklardan vazgeçmek zordur.", "🔁"),
-            ("berücksichtigen", "Göz önünde bulundurmak / Dikkate almak", "C1", "Wir müssen alle Faktoren berücksichtigen.", "Tüm faktörleri göz önünde bulundurmalıyız.", "🧐")
-        ]
-        
-        for k in baslangic_kelimeleri:
-            try:
-                c.execute("INSERT INTO vocabulary (almanca, turkce, seviye, next_review, ornek_de, ornek_tr, last_reviewed, emoji) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
-                          (k[0], k[1], k[2], bugun, k[3], k[4], bugun, k[5]))
-            except sqlite3.IntegrityError:
-                pass
     conn.commit()
     return conn
 
@@ -161,11 +140,9 @@ if last_login_str:
     if last_login_date == bugun - timedelta(days=1):
         current_streak += 1
         c.execute("UPDATE stats SET streak=?, last_login=? WHERE user_id=1", (current_streak, bugun))
-        st.toast(f"🔥 Serin devam ediyor! {current_streak}. Gün!", icon="🔥")
     elif last_login_date < bugun - timedelta(days=1):
         current_streak = 1
         c.execute("UPDATE stats SET streak=?, last_login=? WHERE user_id=1", (current_streak, bugun))
-        st.toast("Yeniden hoş geldin! Serin sıfırlandı.", icon="🌱")
     conn.commit()
 
 def update_performance(module, score):
@@ -188,10 +165,14 @@ def update_level(new_level):
     st.toast(f"Seviye hedefin {new_level} olarak güncellendi.", icon="📈")
 
 # ==========================================
-# 3. YAPAY ZEKA API MOTORU (ORİJİNAL MODEL + CEFR KALİBRASYONU)
+# 3. YAPAY ZEKA API MOTORU
 # ==========================================
-if "xp" not in st.session_state: st.session_state.xp = total_xp
-if "seviye" not in st.session_state: st.session_state.seviye = current_level
+if "xp" not in st.session_state: 
+    st.session_state.xp = total_xp
+if "seviye" not in st.session_state: 
+    st.session_state.seviye = current_level
+if "gunun_konusu" not in st.session_state: 
+    st.session_state.gunun_konusu = ""
 
 api_key = os.getenv("GROQ_API_KEY")
 if not api_key:
@@ -204,14 +185,14 @@ if not api_key:
 client = Groq(api_key=api_key)
 
 def get_json_from_llm(system_prompt, user_prompt, model="openai/gpt-oss-120b"):
-    # CEFR Kuralını sisteme otomatik enjekte et
     cefr_kurali = CEFR_RULES.get(st.session_state.seviye, "")
-    full_system_prompt = f"{system_prompt}\n\nDİKKAT! Öğrenci {st.session_state.seviye} seviyesinde. KESİN KURAL: {cefr_kurali}"
+    ders_kurali = f"\nÖğrencinin bugünkü aktif ders konusu: '{st.session_state.gunun_konusu}'. İçeriği kesinlikle bu konuya ve kurallarına odakla." if st.session_state.gunun_konusu else ""
+    full_system_prompt = f"{system_prompt}\n\nDİKKAT! Öğrenci {st.session_state.seviye} seviyesinde. KESİN KURAL: {cefr_kurali}{ders_kurali}"
     
     try:
         response = client.chat.completions.create(
             messages=[
-                {"role": "system", "content": full_system_prompt + "\n\nCRITICAL INSTRUCTION: You MUST return ONLY valid, raw JSON. Do not use Markdown code blocks (like ```json). Do not include any conversational text before or after the JSON. Ensure keys and string values are enclosed in double quotes."},
+                {"role": "system", "content": full_system_prompt + "\n\nCRITICAL INSTRUCTION: You MUST return ONLY valid, raw JSON. Do not use Markdown code blocks. Do not include conversational text."},
                 {"role": "user", "content": user_prompt}
             ],
             model=model,
@@ -220,16 +201,12 @@ def get_json_from_llm(system_prompt, user_prompt, model="openai/gpt-oss-120b"):
         )
         
         raw_content = response.choices[0].message.content.strip()
-        
         clean_content = re.sub(r"^```json\s*", "", raw_content, flags=re.IGNORECASE)
         clean_content = re.sub(r"^```\s*", "", clean_content)
         clean_content = re.sub(r"\s*```$", "", clean_content)
         
         return json.loads(clean_content)
     
-    except json.JSONDecodeError as e:
-        st.error(f"Sistem Hatası (JSON Ayrıştırma): AI geçersiz bir veri formatı döndürdü. Detay: {e}")
-        return None
     except Exception as e:
         st.error(f"AI İletişim Hatası: {e}")
         return None
@@ -267,23 +244,21 @@ if yeni_seviye != st.session_state.seviye:
 st.sidebar.markdown("---")
 sayfa = st.sidebar.radio("📚 ÖĞRENME MODÜLLERİ", [
     "📊 Akademi Paneli", 
-    "📚 Lektionen (Kur Eğitimi)",
+    "📚 Lektionen (Kur Eğitimi)", 
     "📖 Lesen (Anlama & Çıkarım)", 
     "🎧 Hören (İşitsel Hafıza)", 
     "✍️ Schreiben (Yapısal Üretim)", 
     "🗣️ Sprechen (Akıcılık Odası)", 
     "🧠 Akıllı Hafıza (SRS Kartları)"
 ])
-st.sidebar.markdown("---")
-st.sidebar.caption("© 2026 Goethe AI Language System\nPowered by Groq & LLaMA")
 
 # ==========================================
-# 5. MODÜL İÇERİKLERİ (TAM KAPSAMLI)
+# 5. MODÜL İÇERİKLERİ
 # ==========================================
 
 if sayfa == "📊 Akademi Paneli":
     st.markdown('<div class="module-header">Genel Bakış</div>', unsafe_allow_html=True)
-    st.markdown('<div class="module-subtitle">Öğrenme performansın ve bugünkü görevlerin. Dil öğrenimi bir süreçtir, tutarlılık en büyük gücündür.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Öğrenme performansın ve bugünkü görevlerin.</div>', unsafe_allow_html=True)
     
     c.execute("SELECT COUNT(*) FROM vocabulary WHERE next_review <= ?", (bugun,))
     bekleyen_kelime = c.fetchone()[0]
@@ -292,121 +267,150 @@ if sayfa == "📊 Akademi Paneli":
     toplam_kelime = c.fetchone()[0]
     
     col1, col2, col3, col4 = st.columns(4)
-    with col1: st.markdown(f'<div class="dashboard-card"><div class="card-title">Mevcut Kur</div><div class="card-value" style="color:#60a5fa;">{st.session_state.seviye}</div></div>', unsafe_allow_html=True)
-    with col2: st.markdown(f'<div class="dashboard-card"><div class="card-title">Genel Doğruluk</div><div class="card-value" style="color:#34d399;">%{accuracy_rate:.1f}</div></div>', unsafe_allow_html=True)
-    with col3: st.markdown(f'<div class="dashboard-card"><div class="card-title">Öğrenilen Kelime</div><div class="card-value">{toplam_kelime}</div></div>', unsafe_allow_html=True)
-    with col4: st.markdown(f'<div class="dashboard-card"><div class="card-title">Bugünkü Tekrar</div><div class="card-value" style="color:{"#fbbf24" if bekleyen_kelime>0 else "#4ade80"};">{bekleyen_kelime}</div></div>', unsafe_allow_html=True)
+    with col1: 
+        st.markdown(f'<div class="dashboard-card"><div class="card-title">Mevcut Kur</div><div class="card-value" style="color:#60a5fa;">{st.session_state.seviye}</div></div>', unsafe_allow_html=True)
+    with col2: 
+        st.markdown(f'<div class="dashboard-card"><div class="card-title">Genel Doğruluk</div><div class="card-value" style="color:#34d399;">%{accuracy_rate:.1f}</div></div>', unsafe_allow_html=True)
+    with col3: 
+        st.markdown(f'<div class="dashboard-card"><div class="card-title">Öğrenilen Kelime</div><div class="card-value">{toplam_kelime}</div></div>', unsafe_allow_html=True)
+    with col4: 
+        st.markdown(f'<div class="dashboard-card"><div class="card-title">Bugünkü Tekrar</div><div class="card-value" style="color:{"#fbbf24" if bekleyen_kelime>0 else "#4ade80"};">{bekleyen_kelime}</div></div>', unsafe_allow_html=True)
 
-    st.markdown("### 🎯 Tavsiye Edilen Çalışma Planı")
-    
-    if bekleyen_kelime > 0:
-        st.warning(f"🧠 SRS Hafıza kartlarında seni bekleyen **{bekleyen_kelime} kelime** var. Yeni bir modüle geçmeden önce unutma eğrisini sıfırlamanı tavsiye ederim.")
-    else:
-        st.success("🧠 Bugünkü tüm kelime tekrarlarını tamamladın! Hafızan formda.")
-
-    t1, t2 = st.columns(2)
-    with t1:
-        st.markdown("""
-        <div style="background: rgba(30, 41, 59, 0.4); padding: 20px; border-radius: 12px; border: 1px solid #334155; height: 100%;">
-            <h4 style="margin-top:0; color:#cbd5e1;">💡 Hoca'nın Notu</h4>
-            <p style="color:#94a3b8; font-size: 14px; line-height: 1.6;">Almanca'da artikelleri (der, die, das) kelimenin bir parçasıymış gibi ezberle. "Masa" kelimesini "Tisch" olarak değil, "der Tisch" olarak öğren. Bu, ileride Kasus (haller) yaparken seni büyük bir yükten kurtaracaktır.</p>
-        </div>
-        """, unsafe_allow_html=True)
-    with t2:
-        c.execute("SELECT module_name, score, date FROM performance_logs ORDER BY date DESC LIMIT 3")
-        logs = c.fetchall()
-        st.markdown('<div style="background: rgba(30, 41, 59, 0.4); padding: 20px; border-radius: 12px; border: 1px solid #334155; height: 100%;"><h4 style="margin-top:0; color:#cbd5e1;">📈 Son Aktiviteler</h4>', unsafe_allow_html=True)
-        if not logs:
-            st.markdown('<p style="color:#64748b; font-size:14px;">Henüz bir modül tamamlamadın. Çalışmaya başla!</p>', unsafe_allow_html=True)
-        else:
-            for log in logs:
-                tarih = datetime.strptime(log[2], '%Y-%m-%d %H:%M:%S').strftime('%d.%m %H:%M')
-                st.markdown(f'<div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom: 1px solid #334155; padding-bottom:5px;"><span style="color:#94a3b8;">{log[1]}</span> <span style="color:{"#34d399" if log[1]>75 else "#fbbf24" if log[1]>50 else "#ef4444"}; font-weight:bold;">{log[1]} Puan</span></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    if st.session_state.gunun_konusu:
+        st.info(f"📌 **Günün Aktif Konusu:** {st.session_state.gunun_konusu} (Sınavlar bu konuya göre üretilecek)")
 
 # ------------------------------------------
-# YENİ: EĞİTİM MODÜLÜ (LEKTIONEN) DÜZELTİLMİŞ
+# SAYFALI VE KAPSAMLI EĞİTİM MODÜLÜ (LEKTIONEN)
 # ------------------------------------------
 elif sayfa == "📚 Lektionen (Kur Eğitimi)":
     st.markdown(f'<div class="module-header">📚 Kur Eğitimi: {st.session_state.seviye}</div>', unsafe_allow_html=True)
-    st.markdown('<div class="module-subtitle">Testlere girmeden önce bu kurun gramer iskeletini ve temel mantığını samimi bir anlatımla öğren.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Kapsamlı ders anlatımı. Sayfaları okuyarak konuyu özümse ve kelimeleri hafızana aktar.</div>', unsafe_allow_html=True)
     
-    if "ders_icerigi" not in st.session_state: st.session_state.ders_icerigi = None
+    if "ders_icerigi" not in st.session_state: 
+        st.session_state.ders_icerigi = None
+    if "aktif_sayfa" not in st.session_state: 
+        st.session_state.aktif_sayfa = 0
 
-    if st.button("📖 Bugünün Dersini Hazırla", type="primary", use_container_width=True):
-        with st.spinner("Alman profesör konuyu senin için hikayeleştiriyor..."):
-            sys_prompt = "Sen çok sevilen, samimi ve konuları hikayeleştirerek anlatan efsanevi bir Almanca öğretmenisin."
+    if st.button("📖 Kapsamlı Yeni Ders Hazırla", type="primary", use_container_width=True):
+        with st.spinner("Alman profesör kapsamlı müfredatı ve kelimeleri hazırlıyor... (Bu işlem 10-15 saniye sürebilir)"):
+            sys_prompt = "Sen Almanya'nın en iyi, en samimi dilbilgisi eğitmenisin. Konuları kitap sayfası gibi bölümlere ayırarak anlatırsın."
             user_prompt = f"""
-            Öğrenci {st.session_state.seviye} seviyesinde. Bu kurda öğrenmesi gereken EN KRİTİK gramer konusunu seç ve detaylı bir ders anlatımı yap.
-            JSON Formatı:
+            Öğrenci {st.session_state.seviye} seviyesinde. Bu kurda öğrenmesi gereken EN KRİTİK ve KAPSAMLI gramer konusunu seç.
+            Dersi 3 sayfaya böl.
+            Ayrıca bu konuyla doğrudan alakalı en önemli 3 Almanca kelimeyi listele.
+            
+            JSON Formatı KESİNLİKLE şu yapıda olmalı:
             {{
-                "konu_basligi": "Gramer Konusunun Adı",
-                "turkce_anlatim": "Konuyu karşında bir insan varmış gibi samimi, akıcı, esprili ve gündelik hayattan benzetmeler (analojiler) yaparak anlattığın detaylı metin. Asla robotik ve kopuk kısa cümleler kurma. Bütüncül bir paragraf olsun.",
-                "kurallar": ["Konunun en önemli kuralları (Uzun, akıcı ve açıklayıcı cümlelerle)"],
-                "ornekler": [
-                    {{"de": "Almanca örnek", "tr": "Türkçe çeviri"}}
+                "ders_adi": "Gramer Konusunun Genel Adı",
+                "sayfalar": [
+                    {{
+                        "baslik": "Sayfa 1: Konunun Temeli",
+                        "anlatim": "Konuyu samimi, akıcı, esprili ve günlük hayattan örneklerle anlattığın detaylı metin.",
+                        "ornekler": [{{"de": "Almanca örnek", "tr": "Türkçe çeviri"}}]
+                    }},
+                    {{
+                        "baslik": "Sayfa 2: İleri Kurallar ve İstisnalar",
+                        "anlatim": "Konunun detayları, formülleri ve dikkat edilmesi gereken noktalar.",
+                        "ornekler": [{{"de": "Almanca örnek", "tr": "Türkçe çeviri"}}]
+                    }}
+                ],
+                "yeni_kelimeler": [
+                    {{"almanca": "der Tag", "turkce": "Gün", "ornek_de": "Guten Tag!", "ornek_tr": "İyi günler!", "emoji": "🌅"}}
                 ]
             }}"""
+            
             data = get_json_from_llm(sys_prompt, user_prompt)
+            
             if data:
                 st.session_state.ders_icerigi = data
+                st.session_state.aktif_sayfa = 0
+                st.session_state.gunun_konusu = data.get("ders_adi", "")
                 st.rerun()
 
     if st.session_state.ders_icerigi:
         d = st.session_state.ders_icerigi
+        sayfalar = d.get("sayfalar", [])
+        mevcut_s = st.session_state.aktif_sayfa
         
-        kurallar_html = "".join([f"<li style='margin-bottom: 8px;'>{kural}</li>" for kural in d.get('kurallar', [])])
-        ornekler_html = "".join([f"<div style='margin-bottom:12px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px;'><b style='color:#60a5fa; font-size:16px;'>🇩🇪 {orn['de']}</b><br><span style='color:#94a3b8; font-size:15px;'>🇹🇷 {orn['tr']}</span></div>" for orn in d.get('ornekler', [])])
-        
-        # HTML bloğunu Markdown kod bloklarına dönüştürmemesi için sola tamamen yasladık.
-        html_icerik = f"""
+        if sayfalar and 0 <= mevcut_s < len(sayfalar):
+            sayfa_data = sayfalar[mevcut_s]
+            
+            ornekler_html = "".join([f"<div style='margin-bottom:12px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px;'><b style='color:#60a5fa; font-size:16px;'>🇩🇪 {orn['de']}</b><br><span style='color:#94a3b8; font-size:15px;'>🇹🇷 {orn['tr']}</span></div>" for orn in sayfa_data.get('ornekler', [])])
+            
+            html_icerik = f"""
 <div class="lesson-box">
-<h2 style="color: #a855f7; margin-top:0;">{d.get('konu_basligi')}</h2>
-<p style="font-size: 17px; line-height: 1.8; color: #f8fafc; margin-bottom: 25px;">{d.get('turkce_anlatim')}</p>
+<div style="color:#94a3b8; font-size:13px; text-transform:uppercase; margin-bottom:5px;">{d.get('ders_adi')} - Sayfa {mevcut_s + 1}/{len(sayfalar)}</div>
+<h2 style="color: #a855f7; margin-top:0; border-bottom: 2px solid rgba(168,85,247,0.3); padding-bottom:10px;">{sayfa_data.get('baslik')}</h2>
+<p style="font-size: 17px; line-height: 1.8; color: #f8fafc; margin-bottom: 25px;">{sayfa_data.get('anlatim')}</p>
 
-<h4 style="color: #fbbf24; margin-top: 20px; border-bottom: 1px solid #fbbf24; padding-bottom: 5px;">📌 Altın Kurallar</h4>
-<ul style="color: #cbd5e1; font-size: 16px; line-height: 1.6;">
-{kurallar_html}
-</ul>
-
-<h4 style="color: #34d399; margin-top: 25px; border-bottom: 1px solid #34d399; padding-bottom: 5px;">📝 Örnek Cümleler</h4>
+<h4 style="color: #34d399; margin-top: 25px;">📝 Konuyla İlgili Örnekler</h4>
 <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
 {ornekler_html}
 </div>
 </div>
 """
-        st.markdown(html_icerik, unsafe_allow_html=True)
-        
-        if st.button("✅ Dersi Anladım, XP Kazan ve Pratiğe Geç"):
-            st.session_state.xp += 30
-            c.execute("UPDATE stats SET total_xp = ? WHERE user_id=1", (st.session_state.xp,))
-            conn.commit()
-            st.success("Tebrikler! +30 XP kazandın. Artık bu konuyu test modüllerinde uygulayabilirsin.")
+            st.markdown(html_icerik, unsafe_allow_html=True)
+            
+            # Sayfalama Butonları
+            col1, col2, col3 = st.columns([1,2,1])
+            
+            with col1:
+                if mevcut_s > 0:
+                    if st.button("⬅️ Önceki Sayfa", use_container_width=True):
+                        st.session_state.aktif_sayfa -= 1
+                        st.rerun()
+            
+            with col3:
+                if mevcut_s < len(sayfalar) - 1:
+                    if st.button("Sonraki Sayfa ➡️", use_container_width=True, type="primary"):
+                        st.session_state.aktif_sayfa += 1
+                        st.rerun()
+                else:
+                    if st.button("✅ Dersi Bitir & Kelimeleri Hafızaya Al", use_container_width=True, type="primary"):
+                        kelimeler = d.get("yeni_kelimeler", [])
+                        eklenen = 0
+                        for k in kelimeler:
+                            try:
+                                c.execute("INSERT INTO vocabulary (almanca, turkce, seviye, next_review, ornek_de, ornek_tr, last_reviewed, emoji) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
+                                          (k.get('almanca','').strip(), k.get('turkce','').strip(), st.session_state.seviye, bugun, k.get('ornek_de',''), k.get('ornek_tr',''), bugun, k.get('emoji','💠')))
+                                eklenen += 1
+                            except sqlite3.IntegrityError:
+                                pass
+                        
+                        conn.commit()
+                        st.session_state.xp += 50
+                        c.execute("UPDATE stats SET total_xp = ? WHERE user_id=1", (st.session_state.xp,))
+                        conn.commit()
+                        
+                        st.success(f"Tebrikler! Dersi tamamladın, +50 XP kazandın ve bu dersle ilgili {eklenen} yeni kelime Akıllı Hafıza kartlarına eklendi! Sınavlara geçebilirsin.")
 
+# ------------------------------------------
+# HEDEFE KİLİTLİ SINAV VE PRATİK MODÜLLERİ
+# ------------------------------------------
 elif sayfa == "📖 Lesen (Anlama & Çıkarım)":
-    st.markdown('<div class="module-header">📖 Lesen (Okuma)</div>', unsafe_allow_html=True)
-    st.markdown('<div class="module-subtitle">Bağlamdan anlam çıkarma, kelime dağarcığını pekiştirme ve okuduğunu kavrama modülü.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="module-header">📖 Lesen ({st.session_state.seviye})</div>', unsafe_allow_html=True)
     
-    if "lesen_data" not in st.session_state: st.session_state.lesen_data = None
-    if "lesen_cevap_verildi" not in st.session_state: st.session_state.lesen_cevap_verildi = False
+    if st.session_state.gunun_konusu:
+        st.info(f"🎯 **Test Odağı:** Şu an '{st.session_state.gunun_konusu}' kuralları test edilmektedir.")
+    
+    if "lesen_data" not in st.session_state: 
+        st.session_state.lesen_data = None
+    if "lesen_cevap_verildi" not in st.session_state: 
+        st.session_state.lesen_cevap_verildi = False
 
-    konu_secimi = st.selectbox("Metin Teması Seç (Opsiyonel):", ["Rastgele", "Günlük Hayat (Alltag)", "İş & Kariyer (Beruf)", "Seyahat (Reisen)", "Bilim & Teknoloji (Wissenschaft)"])
-
-    if st.button("📝 Seviyeme Uygun Yeni Metin Hazırla", type="primary", use_container_width=True):
-        with st.spinner("Alman yazar senin için özgün bir içerik hazırlıyor..."):
+    if st.button("📝 Kura Uygun Sınav Hazırla", type="primary", use_container_width=True):
+        with st.spinner("Alman yazar senin için içeriği hazırlıyor..."):
             st.session_state.lesen_cevap_verildi = False
-            tema_kuralı = f"Metnin teması şu olmalı: {konu_secimi}." if konu_secimi != "Rastgele" else "Konuyu rastgele, ilgi çekici bir konudan seç."
             
             sys_prompt = "Sen uzman bir dilbilimci ve Almanca içerik üreticisisin."
             user_prompt = f"""
-            {tema_kuralı}
             Gerekli format JSON:
             {{
                 "baslik": "Metnin Almanca başlığı",
-                "metin": "Öğrencinin seviyesine uygun {2 if 'A1' in st.session_state.seviye or 'A2' in st.session_state.seviye else 4} cümlelik Almanca metin.",
+                "metin": "Öğrencinin seviyesine uygun 3-4 cümlelik Almanca metin.",
                 "ceviri": "Metnin tam Türkçe çevirisi",
-                "soru": "Metnin detaylarıyla ilgili, EVET/HAYIR cevabı OLMAYAN, cümle kurmayı gerektiren Almanca bir soru.",
-                "ipucu": "Soruyu cevaplarken öğrenciye yol gösterecek ufak bir Türkçe ipucu (cevap değil)."
+                "soru": "Metnin detaylarıyla ilgili, cümle kurmayı gerektiren Almanca bir soru.",
+                "ipucu": "Soruyu cevaplarken öğrenciye yol gösterecek ufak bir Türkçe ipucu."
             }}"""
             
             data = get_json_from_llm(sys_prompt, user_prompt)
@@ -416,10 +420,11 @@ elif sayfa == "📖 Lesen (Anlama & Çıkarım)":
 
     if st.session_state.lesen_data:
         d = st.session_state.lesen_data
+        
         st.markdown(f"""
         <div style="background: rgba(30, 41, 59, 0.7); padding: 30px; border-radius: 16px; border: 1px solid #475569; margin-top: 20px;">
             <h3 style="color: #60a5fa; margin-top: 0;">{d.get('baslik', 'Lesetext')}</h3>
-            <p style="font-size: 18px; line-height: 1.7; color: #f8fafc; letter-spacing: 0.2px;">{d['metin']}</p>
+            <p style="font-size: 18px; line-height: 1.7; color: #f8fafc;">{d['metin']}</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -430,8 +435,7 @@ elif sayfa == "📖 Lesen (Anlama & Çıkarım)":
         st.caption(f"💡 İpucu: {d.get('ipucu', '')}")
         
         if not st.session_state.lesen_cevap_verildi:
-            cevap = st.text_area("Cevabını ALMANCA yaz:", height=100, placeholder="Hier deine Antwort eingeben...")
-            
+            cevap = st.text_area("Cevabını ALMANCA yaz:")
             if st.button("👩‍🏫 Kontrol Et ve Puanla", type="primary"):
                 if cevap.strip():
                     with st.spinner("Öğretmen cevabını analiz ediyor..."):
@@ -439,13 +443,12 @@ elif sayfa == "📖 Lesen (Anlama & Çıkarım)":
                         user_prompt = f"""
                         Orijinal Metin: {d['metin']}
                         Sorulan Soru: {d['soru']}
-                        Öğrencinin ({st.session_state.seviye} seviyesi) verdiği Almanca cevap: {cevap}
+                        Öğrencinin ({st.session_state.seviye}) verdiği Almanca cevap: {cevap}
                         
                         Lütfen değerlendir. JSON Formatı:
                         {{
-                            "puan": 0 ile 100 arası bir tam sayı (Anlam uyumu, gramer ve sentaksa göre),
-                            "degerlendirme_tipi": "harika" veya "gelistirmeli" veya "hatali",
-                            "hata_analizi": "TÜRKÇE olarak yapılan hataların tek tek açıklaması ve nedenleri. Öğrencinin mantığını düzelt.",
+                            "puan": 0 ile 100 arası bir tam sayı,
+                            "hata_analizi": "TÜRKÇE olarak yapılan hataların tek tek açıklaması ve nedenleri.",
                             "dogru_versiyon": "Öğrencinin kurmaya çalıştığı cümlenin anadil (Muttersprachler) seviyesindeki kusursuz ve doğal Almanca versiyonu."
                         }}"""
                         
@@ -465,18 +468,15 @@ elif sayfa == "📖 Lesen (Anlama & Çıkarım)":
             
             if puan >= 80:
                 css_class = "feedback-success"
-                icon = "🎉"
             elif puan >= 50:
                 css_class = "feedback-warning"
-                icon = "⚠️"
             else:
                 css_class = "feedback-error"
-                icon = "❌"
                 
             st.markdown(f"""
             <div class="{css_class}">
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom:10px; margin-bottom:15px;">
-                    <h3 style="margin:0;">{icon} Değerlendirme</h3>
+                    <h3 style="margin:0;">Değerlendirme</h3>
                     <span style="font-size:24px; font-weight:bold;">{puan}/100</span>
                 </div>
                 <b>👩‍🏫 Öğretmenin Analizi:</b>
@@ -495,28 +495,30 @@ elif sayfa == "📖 Lesen (Anlama & Çıkarım)":
                 st.rerun()
 
 elif sayfa == "🎧 Hören (İşitsel Hafıza)":
-    st.markdown('<div class="module-header">🎧 Hören (Dinleme)</div>', unsafe_allow_html=True)
-    st.markdown('<div class="module-subtitle">Kulağını Almancanın melodisine ve ritmine alıştır. Duyduğunu anında yazıya dök.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="module-header">🎧 Hören ({st.session_state.seviye})</div>', unsafe_allow_html=True)
     
-    if "horen_data" not in st.session_state: st.session_state.horen_data = None
-    if "horen_cevap_verildi" not in st.session_state: st.session_state.horen_cevap_verildi = False
+    if st.session_state.gunun_konusu:
+        st.info(f"🎯 **Test Odağı:** '{st.session_state.gunun_konusu}' ile ilgili bir ses duyacaksın.")
+    
+    if "horen_data" not in st.session_state: 
+        st.session_state.horen_data = None
+    if "horen_cevap_verildi" not in st.session_state: 
+        st.session_state.horen_cevap_verildi = False
 
     zorluk = st.radio("Dinleme Zorluğu:", ["Normal", "Hızlı (Doğal Konuşma hızı simülasyonu)"], horizontal=True)
 
-    if st.button("🎧 Stüdyoda Yeni Ses Kaydı Hazırla", type="primary", use_container_width=True):
+    if st.button("🎧 Yeni Ses Kaydı Hazırla", type="primary", use_container_width=True):
         with st.spinner("Ses dosyası ve bağlam oluşturuluyor..."):
             st.session_state.horen_cevap_verildi = False
+            
             sys_prompt = "Sen uzman bir dil eğitimcisisin."
-            
-            cumle_sayisi = 1 if 'A1' in st.session_state.seviye or 'A2' in st.session_state.seviye else 2
-            
             user_prompt = f"""
-            Dinleme testi için günlük hayattan, pratik kullanıma sahip {cumle_sayisi} cümlelik doğal bir Almanca ifade yaz.
+            Dinleme testi için pratik kullanıma sahip doğal bir Almanca ifade yaz.
             JSON Formatı:
             {{
-                "almanca": "Yazdığın cümle(ler). Noktalama işaretlerine dikkat et.",
+                "almanca": "Yazdığın cümle. Noktalama işaretlerine dikkat et.",
                 "turkce": "Cümlenin Türkçe çevirisi",
-                "baglam": "Bu cümlenin hangi ortamda veya durumda söylendiğini anlatan kısa Türkçe bilgi (örn: 'Bir tren istasyonunda bilet alırken')"
+                "baglam": "Bu cümlenin hangi ortamda veya durumda söylendiğini anlatan kısa Türkçe bilgi"
             }}"""
             
             data = get_json_from_llm(sys_prompt, user_prompt)
@@ -526,102 +528,89 @@ elif sayfa == "🎧 Hören (İşitsel Hafıza)":
 
     if st.session_state.horen_data:
         d = st.session_state.horen_data
-        
         st.info(f"📍 **Bağlam:** {d.get('baglam', 'Bilinmiyor')}")
         
         try:
             tts = gTTS(text=d["almanca"], lang='de', slow=(zorluk == "Normal"))
             sound_fp = io.BytesIO()
             tts.write_to_fp(sound_fp)
-            
             st.markdown('<div style="background:#1e293b; padding:20px; border-radius:12px; margin-bottom:20px; text-align:center;">', unsafe_allow_html=True)
             st.audio(sound_fp, format='audio/mp3')
             st.markdown('</div>', unsafe_allow_html=True)
-            
-        except Exception as e:
-            st.error("Ses motoru (gTTS) şu an yanıt vermiyor. Lütfen sayfayı yenileyin veya internet bağlantınızı kontrol edin.")
+        except:
+            st.error("Ses motoru şu an yanıt vermiyor.")
             
         if not st.session_state.horen_cevap_verildi:
-            cevap = st.text_area("Duyduğun metni BİREBİR Almanca olarak yaz (Dikte):", height=100)
+            cevap = st.text_area("Duyduğun metni BİREBİR Almanca olarak yaz (Dikte):")
             
-            if st.button("👩‍🏫 Teslim Et ve Karşılaştır", type="primary"):
+            if st.button("👩‍🏫 Karşılaştır", type="primary"):
                 if cevap.strip():
                     with st.spinner("Analiz ediliyor..."):
                         sys_prompt = "Sen bir dinleme-yazma (dikte) asistanısın."
                         user_prompt = f"""
-                        Orijinal Seslendirilen Metin: {d['almanca']}
-                        Öğrencinin Yazdığı: {cevap}
-                        
-                        Noktalama işaretleri ve büyük/küçük harf hatalarını esneterek, öğrencinin kelimeleri ne kadar doğru duyup yazdığını 100 üzerinden puanla.
-                        JSON Formatı:
-                        {{
-                            "puan": 0-100 arası tam sayı,
-                            "hatali_kelimeler": "Öğrencinin yanlış duyduğu veya yanlış yazdığı kelimeler ve nedenleri. Yoksa 'Hatasız' yaz."
-                        }}"""
+                        Orijinal Metin: {d['almanca']}
+                        Yazılan: {cevap}
+                        Öğrencinin ne kadar doğru duyup yazdığını 100 üzerinden puanla.
+                        JSON Formatı: {{"puan": 0-100, "hatali_kelimeler": "Yanlış yazılan kelimeler ve nedenleri. Yoksa 'Hatasız' yaz."}}"""
                         
                         sonuc = get_json_from_llm(sys_prompt, user_prompt)
-                        
                         if sonuc:
                             st.session_state.horen_cevap_verildi = True
                             st.session_state.horen_sonuc = sonuc
                             update_performance("Hören", sonuc.get('puan', 0))
                             st.rerun()
                 else:
-                    st.warning("Değerlendirme için metni yazmalısın.")
-                    
+                    st.warning("Lütfen metni yazın.")
+        
         if st.session_state.horen_cevap_verildi:
             sonuc = st.session_state.horen_sonuc
             puan = sonuc.get('puan', 0)
             
-            if puan >= 90:
-                st.success(f"🎉 Puan: {puan}/100 - Kusursuz kulak! Sesleri tam olarak ayırabiliyorsun.")
-            elif puan >= 60:
-                st.warning(f"⚠️ Puan: {puan}/100 - Anlaşılabilir ancak kelimelerin yazılışlarında veya duyumda eksikler var.")
-            else:
-                st.error(f"❌ Puan: {puan}/100 - Sesleri yakalamakta zorlanıyorsun. Tekrar tekrar dinlemeni öneririm.")
+            if puan >= 90: 
+                st.success(f"🎉 Puan: {puan}/100 - Kusursuz kulak!")
+            elif puan >= 60: 
+                st.warning(f"⚠️ Puan: {puan}/100 - Anlaşılabilir ancak eksikler var.")
+            else: 
+                st.error(f"❌ Puan: {puan}/100 - Sesleri yakalamakta zorlanıyorsun.")
                 
             st.markdown(f"""
             <div style="background: rgba(30, 41, 59, 0.7); padding: 20px; border-radius: 10px; margin-top: 15px; border-left: 4px solid #a855f7;">
-                <b style="color:#a855f7;">Orijinal Metin:</b><br>
-                <span style="font-size:18px; color:white;">{d['almanca']}</span><br><br>
-                <b style="color:#94a3b8;">Türkçesi:</b><br>
-                <span style="color:#cbd5e1;">{d['turkce']}</span>
+                <b style="color:#a855f7;">Orijinal Metin:</b><br><span style="font-size:18px; color:white;">{d['almanca']}</span><br><br>
+                <b style="color:#94a3b8;">Türkçesi:</b><br><span style="color:#cbd5e1;">{d['turkce']}</span>
             </div>
             """, unsafe_allow_html=True)
             
             if sonuc.get('hatali_kelimeler') and sonuc.get('hatali_kelimeler') != "Hatasız":
                 st.info(f"**Hata Analizi:** {sonuc.get('hatali_kelimeler')}")
-                
-            if st.button("🔄 Yeni Bir Ses Kaydı Al"):
+            
+            if st.button("🔄 Yeni Ses Kaydı Al"):
                 st.session_state.horen_data = None
                 st.session_state.horen_cevap_verildi = False
                 st.rerun()
 
 elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
-    st.markdown('<div class="module-header">✍️ Schreiben (Yazma)</div>', unsafe_allow_html=True)
-    st.markdown('<div class="module-subtitle">Kendi cümlelerini kur, kuralları uygula ve aktif dil üretimini test et.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="module-header">✍️ Schreiben ({st.session_state.seviye})</div>', unsafe_allow_html=True)
     
-    if "schreiben_gorev_data" not in st.session_state: st.session_state.schreiben_gorev_data = None
-    if "schreiben_cevap_verildi" not in st.session_state: st.session_state.schreiben_cevap_verildi = False
-
-    gorev_tipi = st.selectbox("Görev Tipi:", ["Serbest İfade (Durum Canlandırması)", "E-posta / Mektup Yazımı", "Fikir Belirtme (Argumentation)"])
+    if st.session_state.gunun_konusu:
+        st.info(f"🎯 **Test Odağı:** Derste öğrendiğin '{st.session_state.gunun_konusu}' yapılarını kullanman istenecek.")
+    
+    if "schreiben_gorev_data" not in st.session_state: 
+        st.session_state.schreiben_gorev_data = None
+    if "schreiben_cevap_verildi" not in st.session_state: 
+        st.session_state.schreiben_cevap_verildi = False
 
     if st.button("🎯 Yeni Görev Oluştur", type="primary", use_container_width=True):
-        with st.spinner("Sana uygun senaryo ve parametreler belirleniyor..."):
+        with st.spinner("Sana uygun senaryo belirleniyor..."):
             st.session_state.schreiben_cevap_verildi = False
-            sys_prompt = "Sen Alman dilinde akademik düzeyde eğitim veren yaratıcı bir eğitmensin."
             
-            uzunluk = "2-3 cümlelik kısa" if 'A' in st.session_state.seviye else "4-5 cümlelik detaylı"
-            
+            sys_prompt = "Sen Alman dilinde eğitim veren bir profesörsün."
             user_prompt = f"""
-            Görev Tipi: {gorev_tipi}.
-            Ona bir durum ver ve bu duruma uygun {uzunluk} bir Almanca metin/cevap yazmasını iste.
-            
+            Öğrenciye bir durum ver ve bu duruma uygun kısa bir Almanca metin yazmasını iste.
             JSON Formatı:
             {{
                 "baslik": "Görevin kısa başlığı (Türkçe)",
-                "durum": "Öğrencinin içinde bulunduğu durumu ve ne yazması gerektiğini anlatan net Türkçe açıklama.",
-                "kullanilmasi_istenen_yapilar": "Öğrenciyi zorlamak için bu metinde kullanmasını tavsiye ettiğin 2 Almanca kelime veya gramer kuralı (örn: 'weil bağlacı', 'Modalverben'). Liste halinde Türkçe yaz."
+                "durum": "Öğrencinin ne yazması gerektiğini anlatan net Türkçe açıklama.",
+                "kullanilmasi_istenen_yapilar": "Öğrenciyi zorlamak için bu metinde kullanmasını tavsiye ettiğin kural."
             }}"""
             
             data = get_json_from_llm(sys_prompt, user_prompt)
@@ -648,35 +637,37 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
             
             if st.button("👩‍🏫 Metni Teslim Et", type="primary"):
                 if cevap.strip():
-                    with st.spinner("Cümle yapıları, artikeller ve çekimler inceleniyor..."):
-                        sys_prompt = "Sen sert, eleştirel ama bir o kadar da öğretici bir Alman dil bilgisi profesörüsün."
+                    with st.spinner("İnceleniyor..."):
+                        sys_prompt = "Sen eleştirel bir Alman dil bilgisi profesörüsün."
                         user_prompt = f"""
                         Görev: {d.get('durum')}
-                        Öğrencinin Yazdığı Metin: "{cevap}"
-                        
-                        Bu metni Alman pedagojisi ile mikroskobik olarak incele.
+                        Metin: "{cevap}"
                         JSON Formatı:
                         {{
-                            "puan": 0-100 (Sentaks, gramer, kelime seçimi doğruluğuna göre),
-                            "detayli_analiz": "Metindeki yapısal hataların, yanlış kelime dizilimlerinin ve artikel hatalarının detaylı TÜRKÇE analizi.",
-                            "muttersprachler_versiyon": "Bu metnin tam olarak Alman bir anadil konuşurunun yazacağı şekildeki %100 doğal, kusursuz ve akıcı hali."
+                            "puan": 0-100 (Sentaks, gramere göre),
+                            "detayli_analiz": "Metindeki yapısal hataların detaylı TÜRKÇE analizi.",
+                            "muttersprachler_versiyon": "Metnin tam olarak Alman bir anadil konuşurunun yazacağı akıcı hali."
                         }}"""
                         
                         sonuc = get_json_from_llm(sys_prompt, user_prompt)
-                        
                         if sonuc:
                             st.session_state.schreiben_cevap_verildi = True
                             st.session_state.schreiben_sonuc = sonuc
                             update_performance("Schreiben", sonuc.get('puan', 0))
                             st.rerun()
                 else:
-                    st.warning("Lütfen bir metin girin.")
-                    
+                    st.warning("Lütfen metni yazın.")
+
         if st.session_state.schreiben_cevap_verildi:
             sonuc = st.session_state.schreiben_sonuc
             puan = sonuc.get('puan', 0)
             
-            css_class = "feedback-success" if puan >= 80 else ("feedback-warning" if puan >= 50 else "feedback-error")
+            if puan >= 80:
+                css_class = "feedback-success"
+            elif puan >= 50:
+                css_class = "feedback-warning"
+            else:
+                css_class = "feedback-error"
                 
             st.markdown(f"""
             <div class="{css_class}">
@@ -694,106 +685,81 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
             </div>
             """, unsafe_allow_html=True)
             
-            if st.button("🔄 Yeni Bir Yazma Görevi Al"):
+            if st.button("🔄 Yeni Görev Al"):
                 st.session_state.schreiben_gorev_data = None
                 st.session_state.schreiben_cevap_verildi = False
                 st.rerun()
 
 elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
-    st.markdown('<div class="module-header">🗣️ Sprechen (Konuşma)</div>', unsafe_allow_html=True)
-    st.markdown('<div class="module-subtitle">Klavye yok. Mikrofonu aç ve sanal dil partnerinle Almanca pratik yap. Hataların anında düzeltilir.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="module-header">🗣️ Sprechen ({st.session_state.seviye})</div>', unsafe_allow_html=True)
+    
+    if st.session_state.gunun_konusu:
+        st.info(f"🎯 **Sohbet Odağı:** Dil partnerin seninle '{st.session_state.gunun_konusu}' üzerine konuşmaya çalışacak.")
     
     if "sp_history" not in st.session_state: 
-        st.session_state.sp_history = []
-        st.session_state.sp_history.append({
-            "role": "ai", 
-            "de": f"Hallo! Lass uns auf Deutsch unterhalten. Wir üben auf dem {st.session_state.seviye} Niveau. Wie war dein Tag heute?", 
-            "tr": f"Merhaba! Hadi Almanca sohbet edelim. {st.session_state.seviye} seviyesinde pratik yapıyoruz. Bugün günün nasıldı?",
-            "correction": None
-        })
+        st.session_state.sp_history = [{"role": "ai", "de": f"Hallo! Wie geht es dir heute?", "tr": "Merhaba! Bugün nasılsın?", "correction": None}]
     
     st.markdown('<div style="height: 400px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column-reverse; background-color: rgba(15, 23, 42, 0.5); border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px;">', unsafe_allow_html=True)
     
     for msg in st.session_state.sp_history:
         if msg["role"] == "user":
             st.markdown(f"""
-            <div style="align-self: flex-end; background-color: #3b82f6; color: white; padding: 12px 18px; border-radius: 18px 18px 4px 18px; margin: 8px 0; max-width: 80%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+            <div style="align-self: flex-end; background-color: #3b82f6; color: white; padding: 12px 18px; border-radius: 18px 18px 4px 18px; margin: 8px 0; max-width: 80%;">
                 {msg["content"]}
             </div>
             """, unsafe_allow_html=True)
         else:
-            correction_html = f'<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 13px; color: #fbbf24;">💡 <b>Düzeltme:</b> {msg["correction"]}</div>' if msg.get("correction") else ''
+            c_html = f'<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 13px; color: #fbbf24;">💡 <b>Düzeltme:</b> {msg["correction"]}</div>' if msg.get("correction") else ''
             
             st.markdown(f"""
-            <div style="align-self: flex-start; background-color: #1e293b; border: 1px solid #475569; color: #f8fafc; padding: 15px; border-radius: 18px 18px 18px 4px; margin: 8px 0; max-width: 85%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+            <div style="align-self: flex-start; background-color: #1e293b; color: #f8fafc; padding: 15px; border-radius: 18px 18px 18px 4px; margin: 8px 0; max-width: 85%;">
                 <div style="font-size: 16px; font-weight: 500;">{msg["de"]}</div>
                 <div style="font-size: 13px; color: #94a3b8; margin-top: 5px;">🇹🇷 {msg["tr"]}</div>
-                {correction_html}
+                {c_html}
             </div>
             """, unsafe_allow_html=True)
-            
+    
     st.markdown('</div>', unsafe_allow_html=True)
     
     audio_bytes = st.audio_input("Mikrofona tıkla, konuş ve gönder:")
-    
     if audio_bytes and client:
-        with st.spinner("🎙️ Söylediklerin metne çevriliyor (Whisper)..."):
+        with st.spinner("🎙️ İşleniyor..."):
             try:
                 transcription = client.audio.transcriptions.create(
-                  file=("audio.wav", audio_bytes.read()),
-                  model="whisper-large-v3",
-                  prompt=f"Das ist ein deutsches Gespräch auf dem Niveau {st.session_state.seviye}.",
-                  response_format="json"
+                    file=("audio.wav", audio_bytes.read()), 
+                    model="whisper-large-v3", 
+                    response_format="json"
                 )
                 user_text = transcription.text
                 
                 st.session_state.sp_history.insert(0, {"role": "user", "content": user_text})
                 
-                with st.spinner("🧠 Dil partnerin yanıt hazırlıyor..."):
-                    sys_prompt = "Sen arkadaş canlısı bir Alman dil partnerisin. Öğrencinin seviyesine uygun, diyaloğu devam ettiren cevaplar ver. Ayrıca eğer öğrenci cümlesinde bariz bir gramer/artikel hatası yaptıysa bunu kısaca Türkçe olarak açıkla."
-                    
-                    context = ""
-                    for m in reversed(st.session_state.sp_history[:3]):
-                         if m['role'] == 'user': context += f"\nÖğrenci: {m['content']}"
-                         else: context += f"\nSen: {m['de']}"
+                with st.spinner("🧠 Yanıt hazırlanıyor..."):
+                    sys_prompt = "Sen arkadaş canlısı bir Alman dil partnerisin. Hataları kısaca düzelt."
+                    context = "".join([f"\n{m['role']}: {m.get('de', m.get('content'))}" for m in reversed(st.session_state.sp_history[:3])])
                     
                     user_prompt = f"""
                     Sohbet Geçmişi: {context}
-                    
-                    Öğrencinin son söylediği cümleyi ({user_text}) analiz et.
-                    1. Ona doğal Almanca bir cevap ver (Diyaloğu devam ettir, soru sor).
-                    2. Varsa, son cümlesindeki hataları düzelt.
-                    
-                    JSON Formatı:
-                    {{
-                        "de": "Almanca cevabın (Diyaloğu sürdüren)",
-                        "tr": "Almanca cevabının Türkçe çevirisi",
-                        "correction": "Eğer öğrencinin son cümlesinde 'der/die/das', çekim veya kelime sırası hatası varsa kısaca TÜRKÇE açıkla ve doğrusunu yaz. Hata yoksa bu alanı boş bırak veya null gönder."
-                    }}"""
+                    Öğrenci: {user_text}
+                    JSON: {{"de": "Almanca cevabın", "tr": "Türkçe çevirisi", "correction": "Hata varsa düzelt, yoksa boş bırak"}}"""
                     
                     hoca_data = get_json_from_llm(sys_prompt, user_prompt)
                     
                     if hoca_data:
-                        st.session_state.sp_history.insert(0, {
-                            "role": "ai", 
-                            "de": hoca_data.get("de"), 
-                            "tr": hoca_data.get("tr"),
-                            "correction": hoca_data.get("correction")
-                        })
+                        st.session_state.sp_history.insert(0, {"role": "ai", "de": hoca_data.get("de"), "tr": hoca_data.get("tr"), "correction": hoca_data.get("correction")})
                         c.execute("UPDATE stats SET total_xp = total_xp + 20 WHERE user_id=1")
                         conn.commit()
                         st.session_state.xp += 20
                         st.rerun()
-                        
             except Exception as e:
-                st.error(f"Mikrofon işlemi başarısız oldu. Detay: {e}")
+                st.error(f"Mikrofon hatası: {e}")
 
 # ------------------------------------------
-# YENİ: GÖRSEL ZEKALI SRS KARTLARI (HATASIZ)
+# SRS KARTLARI (GÖRSEL HAFIZA DESTEKLİ)
 # ------------------------------------------
 elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
     st.markdown('<div class="module-header">🧠 Görsel Akıllı Hafıza</div>', unsafe_allow_html=True)
-    st.markdown('<div class="module-subtitle">Kelimeleri görsel hafızana kazı (Emoji/İkon destekli SM-2 algoritması).</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Kelimeleri görsel hafızana kazı. Dersten eklenen yeni kelimeler burada karşına çıkar.</div>', unsafe_allow_html=True)
     
     c.execute("SELECT * FROM vocabulary WHERE next_review <= ?", (bugun,))
     kelimeler = c.fetchall()
@@ -803,7 +769,7 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
         <div style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; border-radius: 15px; padding: 40px; text-align: center; margin-top: 30px;">
             <div style="font-size: 50px; margin-bottom: 10px;">🏆</div>
             <h2 style="color: #34d399; margin: 0;">Muhteşem!</h2>
-            <p style="color: #ecfdf5; font-size: 18px; margin-top: 10px;">Bugün için planlanan tüm kelime tekrarlarını tamamladın. Algoritma hafızanı güncelledi.</p>
+            <p style="color: #ecfdf5; font-size: 18px; margin-top: 10px;">Tüm kelime tekrarlarını tamamladın. Yeni kelimeler için Kur Eğitimine (Lektionen) gidebilirsin!</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -828,14 +794,15 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     else:
                         st.error("Almanca kelime ve Türkçe anlamı boş bırakılamaz.")
     else:
-        if "kart_yuzu" not in st.session_state: st.session_state.kart_yuzu = "on"
-        
+        if "kart_yuzu" not in st.session_state: 
+            st.session_state.kart_yuzu = "on"
+            
         kart_verisi = kelimeler[0]
         k_id, de_kelime, tr_kelime, seviye_etiketi, ease_factor, interval = kart_verisi[0:6]
-        ornek_de, ornek_tr, correct_streak = kart_verisi[7:10]
+        ornek_de, ornek_tr, correct_streak = kart_verisi
         emoji = kart_verisi[11] if len(kart_verisi) > 11 else "💠"
         
-        st.markdown(f'<div style="text-align:right; color:#94a3b8; margin-bottom:10px;">Bekleyen Kart: <b>{len(kelimeler)}</b> | Mevcut Çarpan: <b>x{ease_factor:.1f}</b></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="text-align:right; color:#94a3b8; margin-bottom:10px;">Bekleyen Kart: <b>{len(kelimeler)}</b> | Çarpan: <b>x{ease_factor:.1f}</b></div>', unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns([1,3,1])
         with col2:
@@ -845,7 +812,6 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     <div style="position:absolute; top:15px; right:20px; background:#334155; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:bold;">{seviye_etiketi}</div>
                     <div style="font-size: 80px; margin-bottom: 10px; filter: drop-shadow(0px 5px 10px rgba(0,0,0,0.5));">{emoji}</div>
                     <div style="font-size: 42px; font-weight: 800; color: #60a5fa; margin-bottom: 10px;">{de_kelime}</div>
-                    <div style="color: #94a3b8; font-size: 14px;">Kelimeyi zihninde canlandır...</div>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -869,31 +835,24 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                 c1, c2, c3 = st.columns(3)
                 
                 if c1.button("🔴 Unuttum", use_container_width=True):
-                    yeni_ease = max(1.3, ease_factor - 0.2)
                     c.execute("UPDATE vocabulary SET interval=1, ease_factor=?, next_review=?, correct_streak=0, last_reviewed=? WHERE id=?", 
-                              (yeni_ease, bugun + timedelta(days=1), bugun, k_id))
+                              (max(1.3, ease_factor - 0.2), bugun + timedelta(days=1), bugun, k_id))
                     conn.commit()
                     st.session_state.kart_yuzu = "on"
                     st.rerun()
                     
                 if c2.button("🟡 Zorlandım", use_container_width=True):
-                    yeni_ease = max(1.3, ease_factor - 0.1)
-                    yeni_int = max(2, int(interval * 1.2))
                     c.execute("UPDATE vocabulary SET interval=?, ease_factor=?, next_review=?, last_reviewed=? WHERE id=?", 
-                              (yeni_int, yeni_ease, bugun + timedelta(days=yeni_int), bugun, k_id))
+                              (max(2, int(interval * 1.2)), max(1.3, ease_factor - 0.1), bugun + timedelta(days=max(2, int(interval * 1.2))), bugun, k_id))
                     conn.commit()
                     st.session_state.kart_yuzu = "on"
                     st.rerun()
                     
                 if c3.button("🟢 Kolaydı", use_container_width=True):
-                    bonus = 1.0 + (correct_streak * 0.05) 
-                    yeni_ease = ease_factor + 0.1
-                    yeni_int = max(3, int(interval * yeni_ease * bonus))
-                    
+                    yeni_int = max(3, int(interval * (ease_factor + 0.1) * (1.0 + correct_streak * 0.05)))
                     c.execute("UPDATE vocabulary SET interval=?, ease_factor=?, next_review=?, correct_streak=correct_streak+1, last_reviewed=? WHERE id=?", 
-                              (yeni_int, yeni_ease, bugun + timedelta(days=yeni_int), bugun, k_id))
+                              (yeni_int, ease_factor + 0.1, bugun + timedelta(days=yeni_int), bugun, k_id))
                     
-                    # NameError hatası tamamen çözüldü
                     c.execute("UPDATE stats SET total_xp = total_xp + 5 WHERE user_id=1")
                     conn.commit()
                     st.session_state.xp += 5
