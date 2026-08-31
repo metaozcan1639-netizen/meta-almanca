@@ -768,7 +768,7 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     conn.commit()
                     st.session_state.kart_yuzu = "on"; st.rerun()
                     
-            if c1.button("🔴 Unuttum", use_container_width=True):
+                if c1.button("🔴 Unuttum", use_container_width=True):
                     yeni_ease = max(1.3, ease_factor - 0.2)
                     c.execute("UPDATE vocabulary SET interval=1, ease_factor=?, next_review=?, correct_streak=0, last_reviewed=? WHERE id=?", 
                               (yeni_ease, bugun + timedelta(days=1), bugun, k_id))
