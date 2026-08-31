@@ -9,7 +9,7 @@ from groq import Groq
 from gtts import gTTS
 
 # ==========================================
-# 0. SİSTEM YAPILANDIRMASI VE CSS
+# 0. SİSTEM YAPILANDIRMASI VE CSS MİMARİSİ
 # ==========================================
 st.set_page_config(page_title="Goethe AI - Dil Akademisi Pro", page_icon="🎓", layout="wide", initial_sidebar_state="expanded")
 
@@ -38,22 +38,28 @@ st.markdown("""
     .native-label { font-size: 12px; color: #93c5fd; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 8px; display: block;}
     .native-text { font-size: 18px; font-weight: 400; font-style: italic;}
     
-    /* Kelime Kartı Özelleştirmeleri */
-    .flashcard { background: linear-gradient(180deg, #1e293b, #0f172a); border: 2px solid #3b82f6; border-radius: 20px; padding: 40px; text-align: center; box-shadow: 0 15px 30px rgba(0,0,0,0.4); min-height: 250px; display: flex; flex-direction: column; justify-content: center;}
-    .flashcard-word { font-size: 48px; font-weight: 800; color: #60a5fa; margin-bottom: 20px; text-shadow: 0 2px 10px rgba(96, 165, 250, 0.3);}
-    .flashcard-translation { font-size: 36px; font-weight: 800; color: #fbbf24; margin-bottom: 15px;}
-    .flashcard-example-de { font-size: 18px; color: #cbd5e1; font-style: italic; margin-bottom: 5px;}
-    .flashcard-example-tr { font-size: 15px; color: #64748b;}
+    /* Hatasız Kapsayıcılı Flashcard Tasarımı */
+    .flashcard { 
+        background: linear-gradient(180deg, #1e293b, #0f172a); 
+        border: 2px solid #3b82f6; 
+        border-radius: 20px; 
+        padding: 30px; 
+        text-align: center; 
+        box-shadow: 0 15px 30px rgba(0,0,0,0.4); 
+        min-height: 320px; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: center;
+        position: relative;
+    }
     
-    /* Sidebar */
     .css-1d391kg { background-color: #0b1120; }
     .sidebar-header { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: #f8fafc; text-align: center; margin-bottom: 30px; letter-spacing: 1px; border-bottom: 1px solid #1e293b; padding-bottom: 15px;}
     
-    /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: #0f172a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -99,7 +105,13 @@ def init_db():
             ("die Herausforderung", "Meydan Okuma / Zorluk", "B1", "Die neue Aufgabe ist eine echte Herausforderung.", "Yeni görev gerçek bir meydan okuma."),
             ("unbedingt", "Kesinlikle / İlla ki", "A2", "Ich muss das unbedingt heute erledigen.", "Bunu bugün kesinlikle halletmeliyim."),
             ("der Erfolg", "Başarı", "A1", "Erfolg ist das Ergebnis harter Arbeit.", "Başarı sıkı çalışmanın sonucudur."),
-            ("enttäuscht", "Hayal Kırıklığına Uğramış", "B1", "Sie war von dem Ergebnis sehr enttäuscht.", "Sonuçtan çok hayal kırıklığına uğramıştı.")
+            ("enttäuscht", "Hayal Kırıklığına Uğramış", "B1", "Sie war von dem Ergebnis sehr enttäuscht.", "Sonuçtan çok hayal kırıklığına uğramıştı."),
+            ("die Leidenschaft", "Tutku", "B2", "Er spricht mit großer Leidenschaft über seinen Beruf.", "Mesleği hakkında büyük bir tutkuyla konuşuyor."),
+            ("begeistert", "Heyecanlı / Coşkulu", "A2", "Ich bin begeistert von dieser Idee.", "Bu fikirden dolayı heyecanlıyım."),
+            ("die Wahrscheinlichkeit", "Olasılık", "B2", "Die Wahrscheinlichkeit eines Sieges ist hoch.", "Galibiyet olasılığı yüksek."),
+            ("entwickeln", "Geliştirmek", "B1", "Wir müssen neue Strategien entwickeln.", "Yeni stratejiler geliştirmeliyiz."),
+            ("die Gewohnheit", "Alışkanlık", "A2", "Es ist schwer, alte Gewohnheiten aufzugeben.", "Eski alışkanlıklardan vazgeçmek zordur."),
+            ("berücksichtigen", "Göz önünde bulundurmak / Dikkate almak", "C1", "Wir müssen alle Faktoren berücksichtigen.", "Tüm faktörleri göz önünde bulundurmalıyız.")
         ]
         
         for k in baslangic_kelimeleri:
@@ -114,7 +126,6 @@ def init_db():
 conn = init_db()
 c = conn.cursor()
 
-# --- Giriş, Streak ve XP Sistemi ---
 bugun = datetime.now().date()
 c.execute("SELECT streak, last_login, total_xp, level, accuracy_rate FROM stats WHERE user_id=1")
 stat_row = c.fetchone()
@@ -129,7 +140,7 @@ if last_login_str:
     elif last_login_date < bugun - timedelta(days=1):
         current_streak = 1
         c.execute("UPDATE stats SET streak=?, last_login=? WHERE user_id=1", (current_streak, bugun))
-        st.toast("Yeniden hoş geldin! Serin sıfırlandı, yeni bir başlangıç.", icon="🌱")
+        st.toast("Yeniden hoş geldin! Serin sıfırlandı.", icon="🌱")
     conn.commit()
 
 def update_performance(module, score):
@@ -152,7 +163,7 @@ def update_level(new_level):
     st.toast(f"Seviye hedefin {new_level} olarak güncellendi.", icon="📈")
 
 # ==========================================
-# 2. YAPAY ZEKA API MOTORU (GELİŞMİŞ JSON İŞLEME)
+# 2. YAPAY ZEKA API MOTORU (ORİJİNAL OPENAI/GPT-OSS MODEL)
 # ==========================================
 if "xp" not in st.session_state: st.session_state.xp = total_xp
 if "seviye" not in st.session_state: st.session_state.seviye = current_level
@@ -167,7 +178,6 @@ if not api_key:
 
 client = Groq(api_key=api_key)
 
-# SENİN ORİJİNAL MODELİN BURAYA EKLENDİ (openai/gpt-oss-120b)
 def get_json_from_llm(system_prompt, user_prompt, model="openai/gpt-oss-120b"):
     try:
         response = client.chat.completions.create(
@@ -189,7 +199,7 @@ def get_json_from_llm(system_prompt, user_prompt, model="openai/gpt-oss-120b"):
         return json.loads(clean_content)
     
     except json.JSONDecodeError as e:
-        st.error(f"Sistem Hatası (JSON Ayrıştırma): AI geçersiz bir veri formatı döndürdü. Lütfen işlemi tekrarlayın. \n\nDetay: {e}")
+        st.error(f"Sistem Hatası (JSON Ayrıştırma): AI geçersiz bir veri formatı döndürdü. Detay: {e}")
         return None
     except Exception as e:
         st.error(f"AI İletişim Hatası: {e}")
@@ -226,10 +236,10 @@ if secilen_kod != st.session_state.seviye:
 st.sidebar.markdown("---")
 sayfa = st.sidebar.radio("📚 ÖĞRENME MODÜLLERİ", ["📊 Akademi Paneli", "📖 Lesen (Anlama & Çıkarım)", "🎧 Hören (İşitsel Hafıza)", "✍️ Schreiben (Yapısal Üretim)", "🗣️ Sprechen (Akıcılık Odası)", "🧠 Akıllı Hafıza (SRS Kartları)"])
 st.sidebar.markdown("---")
-st.sidebar.caption("© 2026 Goethe AI Language System")
+st.sidebar.caption("© 2026 Goethe AI Language System\nPowered by Groq & LLaMA")
 
 # ==========================================
-# 4. MODÜL İÇERİKLERİ
+# 4. MODÜL İÇERİKLERİ (TAM KAPSAMLI)
 # ==========================================
 
 if sayfa == "📊 Akademi Paneli":
@@ -452,7 +462,7 @@ elif sayfa == "🎧 Hören (İşitsel Hafıza)":
                             "hatali_kelimeler": "Öğrencinin yanlış duyduğu veya yanlış yazdığı kelimeler ve nedenleri. Yoksa 'Hatasız' yaz."
                         }}"""
                         
-                        sonuc = get_json_from_llm(sys_prompt, user_prompt, model="openai/gpt-oss-120b")
+                        sonuc = get_json_from_llm(sys_prompt, user_prompt)
                         
                         if sonuc:
                             st.session_state.horen_cevap_verildi = True
@@ -469,7 +479,7 @@ elif sayfa == "🎧 Hören (İşitsel Hafıza)":
             if puan >= 90:
                 st.success(f"🎉 Puan: {puan}/100 - Kusursuz kulak! Sesleri tam olarak ayırabiliyorsun.")
             elif puan >= 60:
-                st.warning(f"⚠️ Puan: {puan}/100 - Anlaşılabilir ancak kelimelerin yazılışlarında (Rechtschreibung) veya duyumda eksikler var.")
+                st.warning(f"⚠️ Puan: {puan}/100 - Anlaşılabilir ancak kelimelerin yazılışlarında veya duyumda eksikler var.")
             else:
                 st.error(f"❌ Puan: {puan}/100 - Sesleri yakalamakta zorlanıyorsun. Tekrar tekrar dinlemeni öneririm.")
                 
@@ -552,7 +562,7 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
                         JSON Formatı:
                         {{
                             "puan": 0-100 (Sentaks, gramer, kelime seçimi doğruluğuna göre),
-                            "detayli_analiz": "Metindeki yapısal hataların, yanlış kelime dizilimlerinin (Wortstellung) ve artikel hatalarının detaylı, acımasız ama eğitici TÜRKÇE analizi. (Eğer mükemmelse neden mükemmel olduğunu açıkla)",
+                            "detayli_analiz": "Metindeki yapısal hataların, yanlış kelime dizilimlerinin ve artikel hatalarının detaylı TÜRKÇE analizi.",
                             "muttersprachler_versiyon": "Bu metnin tam olarak Alman bir anadil konuşurunun yazacağı şekildeki %100 doğal, kusursuz ve akıcı hali."
                         }}"""
                         
@@ -723,28 +733,30 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
         
         col1, col2, col3 = st.columns([1,3,1])
         with col2:
-            st.markdown('<div class="flashcard">', unsafe_allow_html=True)
-            
+            # HATASIZ KAPSAYICI İÇİNDE KART YAPISI (Yazıların dışarı taşması engellendi)
             if st.session_state.kart_yuzu == "on":
-                st.markdown(f'<div style="position:absolute; top:15px; right:20px; background:#334155; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:bold;">{seviye_etiketi}</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="flashcard-word">{de_kelime}</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True) 
+                st.markdown(f"""
+                <div class="flashcard">
+                    <div style="position:absolute; top:15px; right:20px; background:#334155; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:bold;">{seviye_etiketi}</div>
+                    <div style="font-size: 42px; font-weight: 800; color: #60a5fa; margin-bottom: 10px;">{de_kelime}</div>
+                    <div style="color: #94a3b8; font-size: 14px;">Kelimeyi zihninde canlandır...</div>
+                </div>
+                """, unsafe_allow_html=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("🔄 Anlamını Hatırladım / Göster", use_container_width=True, type="primary"):
                     st.session_state.kart_yuzu = "arka"
                     st.rerun()
-            
             else:
-                st.markdown(f'<div class="flashcard-translation">{tr_kelime}</div>', unsafe_allow_html=True)
-                
-                if ornek_de:
-                    st.markdown('<div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-top: 20px;">', unsafe_allow_html=True)
-                    st.markdown(f'<div class="flashcard-example-de">"{ornek_de}"</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="flashcard-example-tr">{ornek_tr}</div>', unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class="flashcard">
+                    <div style="font-size: 34px; font-weight: 800; color: #fbbf24; margin-bottom: 15px;">{tr_kelime}</div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; width: 100%;">
+                        <div style="font-size: 16px; color: #cbd5e1; font-style: italic; margin-bottom: 5px;">"{ornek_de}"</div>
+                        <div style="font-size: 14px; color: #94a3b8;">{ornek_tr}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 c1, c2, c3 = st.columns(3)
@@ -758,8 +770,7 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     
                 if c2.button("🟡 Zorlandım", use_container_width=True):
                     yeni_ease = max(1.3, ease_factor - 0.1)
-                    yeni_int = interval * 1.2
-                    yeni_int = 2 if yeni_int < 2 else int(yeni_int)
+                    yeni_int = max(2, int(interval * 1.2))
                     c.execute("UPDATE vocabulary SET interval=?, ease_factor=?, next_review=?, last_reviewed=? WHERE id=?", 
                               (yeni_int, yeni_ease, bugun + timedelta(days=yeni_int), bugun, k_id))
                     conn.commit()
