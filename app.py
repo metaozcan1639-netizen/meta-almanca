@@ -163,7 +163,7 @@ def update_level(new_level):
     st.toast(f"Seviye hedefin {new_level} olarak güncellendi.", icon="📈")
 
 # ==========================================
-# 2. YAPAY ZEKA API MOTORU (ORİJİNAL OPENAI/GPT-OSS MODEL)
+# 2. YAPAY ZEKA API MOTORU (ORİJİNAL MODEL)
 # ==========================================
 if "xp" not in st.session_state: st.session_state.xp = total_xp
 if "seviye" not in st.session_state: st.session_state.seviye = current_level
@@ -733,7 +733,6 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
         
         col1, col2, col3 = st.columns([1,3,1])
         with col2:
-            # HATASIZ KAPSAYICI İÇİNDE KART YAPISI (Yazıların dışarı taşması engellendi)
             if st.session_state.kart_yuzu == "on":
                 st.markdown(f"""
                 <div class="flashcard">
@@ -766,14 +765,8 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     c.execute("UPDATE vocabulary SET interval=1, ease_factor=?, next_review=?, correct_streak=0, last_reviewed=? WHERE id=?", 
                               (yeni_ease, bugun + timedelta(days=1), bugun, k_id))
                     conn.commit()
-                    st.session_state.kart_yuzu = "on"; st.rerun()
-                    
-                if c1.button("🔴 Unuttum", use_container_width=True):
-                    yeni_ease = max(1.3, ease_factor - 0.2)
-                    c.execute("UPDATE vocabulary SET interval=1, ease_factor=?, next_review=?, correct_streak=0, last_reviewed=? WHERE id=?", 
-                              (yeni_ease, bugun + timedelta(days=1), bugun, k_id))
-                    conn.commit()
-                    st.session_state.kart_yuzu = "on"; st.rerun()
+                    st.session_state.kart_yuzu = "on"
+                    st.rerun()
                     
                 if c2.button("🟡 Zorlandım", use_container_width=True):
                     yeni_ease = max(1.3, ease_factor - 0.1)
@@ -781,7 +774,8 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     c.execute("UPDATE vocabulary SET interval=?, ease_factor=?, next_review=?, last_reviewed=? WHERE id=?", 
                               (yeni_int, yeni_ease, bugun + timedelta(days=yeni_int), bugun, k_id))
                     conn.commit()
-                    st.session_state.kart_yuzu = "on"; st.rerun()
+                    st.session_state.kart_yuzu = "on"
+                    st.rerun()
                     
                 if c3.button("🟢 Kolaydı", use_container_width=True):
                     bonus = 1.0 + (correct_streak * 0.05) 
@@ -791,9 +785,11 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     c.execute("UPDATE vocabulary SET interval=?, ease_factor=?, next_review=?, correct_streak=correct_streak+1, last_reviewed=? WHERE id=?", 
                               (yeni_int, yeni_ease, bugun + timedelta(days=yeni_int), bugun, k_id))
                     
-                    # XP ekleme fonksiyonu yerine doğrudan veritabanı üzerinden XP'yi güncelliyoruz ki NameError vermesin
                     c.execute("UPDATE stats SET total_xp = total_xp + 5 WHERE user_id=1")
                     conn.commit()
                     st.session_state.xp += 5
                     
-                    st.session_state.kart_yuzu = "on"; st.rerun()
+                    st.session_state.kart_yuzu = "on"
+                    st.rerun()
+
+conn.close()
