@@ -768,6 +768,13 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     conn.commit()
                     st.session_state.kart_yuzu = "on"; st.rerun()
                     
+            if c1.button("🔴 Unuttum", use_container_width=True):
+                    yeni_ease = max(1.3, ease_factor - 0.2)
+                    c.execute("UPDATE vocabulary SET interval=1, ease_factor=?, next_review=?, correct_streak=0, last_reviewed=? WHERE id=?", 
+                              (yeni_ease, bugun + timedelta(days=1), bugun, k_id))
+                    conn.commit()
+                    st.session_state.kart_yuzu = "on"; st.rerun()
+                    
                 if c2.button("🟡 Zorlandım", use_container_width=True):
                     yeni_ease = max(1.3, ease_factor - 0.1)
                     yeni_int = max(2, int(interval * 1.2))
@@ -783,8 +790,10 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     
                     c.execute("UPDATE vocabulary SET interval=?, ease_factor=?, next_review=?, correct_streak=correct_streak+1, last_reviewed=? WHERE id=?", 
                               (yeni_int, yeni_ease, bugun + timedelta(days=yeni_int), bugun, k_id))
+                    
+                    # XP ekleme fonksiyonu yerine doğrudan veritabanı üzerinden XP'yi güncelliyoruz ki NameError vermesin
+                    c.execute("UPDATE stats SET total_xp = total_xp + 5 WHERE user_id=1")
                     conn.commit()
-                    add_xp(5)
+                    st.session_state.xp += 5
+                    
                     st.session_state.kart_yuzu = "on"; st.rerun()
-
-conn.close()
