@@ -64,7 +64,6 @@ def init_db():
     conn = sqlite3.connect('akademie_master_pro.db', check_same_thread=False)
     c = conn.cursor()
     
-    # Kelime Hafıza Sistemi (Genişletilmiş SM-2)
     c.execute('''CREATE TABLE IF NOT EXISTS vocabulary (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         almanca TEXT UNIQUE, turkce TEXT, seviye TEXT,
@@ -73,7 +72,6 @@ def init_db():
         correct_streak INTEGER DEFAULT 0, last_reviewed DATE
     )''')
     
-    # Kullanıcı İstatistikleri ve Başarılar
     c.execute('''CREATE TABLE IF NOT EXISTS stats (
         user_id INTEGER PRIMARY KEY,
         streak INTEGER DEFAULT 0,
@@ -84,7 +82,6 @@ def init_db():
         accuracy_rate REAL DEFAULT 100.0
     )''')
     
-    # Performans Kayıtları (Analitik için)
     c.execute('''CREATE TABLE IF NOT EXISTS performance_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
@@ -93,24 +90,16 @@ def init_db():
         date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     
-    # Varsayılan Kullanıcı Oluşturma
     c.execute("SELECT COUNT(*) FROM stats")
     if c.fetchone()[0] == 0:
         bugun = datetime.now().date()
         c.execute("INSERT INTO stats (user_id, streak, last_login, total_xp, level) VALUES (1, 1, ?, 0, 'A1')", (bugun,))
         
-        # Profesyonel Başlangıç Kelime Seti (Çeşitli Seviyeler)
         baslangic_kelimeleri = [
             ("die Herausforderung", "Meydan Okuma / Zorluk", "B1", "Die neue Aufgabe ist eine echte Herausforderung.", "Yeni görev gerçek bir meydan okuma."),
             ("unbedingt", "Kesinlikle / İlla ki", "A2", "Ich muss das unbedingt heute erledigen.", "Bunu bugün kesinlikle halletmeliyim."),
             ("der Erfolg", "Başarı", "A1", "Erfolg ist das Ergebnis harter Arbeit.", "Başarı sıkı çalışmanın sonucudur."),
-            ("enttäuscht", "Hayal Kırıklığına Uğramış", "B1", "Sie war von dem Ergebnis sehr enttäuscht.", "Sonuçtan çok hayal kırıklığına uğramıştı."),
-            ("die Leidenschaft", "Tutku", "B2", "Er spricht mit großer Leidenschaft über seinen Beruf.", "Mesleği hakkında büyük bir tutkuyla konuşuyor."),
-            ("begeistert", "Heyecanlı / Coşkulu", "A2", "Ich bin begeistert von dieser Idee.", "Bu fikirden dolayı heyecanlıyım."),
-            ("die Wahrscheinlichkeit", "Olasılık", "B2", "Die Wahrscheinlichkeit eines Sieges ist hoch.", "Galibiyet olasılığı yüksek."),
-            ("entwickeln", "Geliştirmek", "B1", "Wir müssen neue Strategien entwickeln.", "Yeni stratejiler geliştirmeliyiz."),
-            ("die Gewohnheit", "Alışkanlık", "A2", "Es ist schwer, alte Gewohnheiten aufzugeben.", "Eski alışkanlıklardan vazgeçmek zordur."),
-            ("berücksichtigen", "Göz önünde bulundurmak / Dikkate almak", "C1", "Wir müssen alle Faktoren berücksichtigen.", "Tüm faktörleri göz önünde bulundurmalıyız.")
+            ("enttäuscht", "Hayal Kırıklığına Uğramış", "B1", "Sie war von dem Ergebnis sehr enttäuscht.", "Sonuçtan çok hayal kırıklığına uğramıştı.")
         ]
         
         for k in baslangic_kelimeleri:
@@ -118,7 +107,7 @@ def init_db():
                 c.execute("INSERT INTO vocabulary (almanca, turkce, seviye, next_review, ornek_de, ornek_tr, last_reviewed) VALUES (?, ?, ?, ?, ?, ?, ?)", 
                           (k[0], k[1], k[2], bugun, k[3], k[4], bugun))
             except sqlite3.IntegrityError:
-                pass # Benzersizlik kısıtlaması ihlali varsa atla
+                pass
     conn.commit()
     return conn
 
@@ -145,11 +134,8 @@ if last_login_str:
 
 def update_performance(module, score):
     global total_xp, accuracy_rate
-    # XP Ekleme
-    xp_earned = score // 2 # 100 puan = 50 XP
+    xp_earned = score // 2
     total_xp += xp_earned
-    
-    # Doğruluk Oranı Güncelleme (Hareketli Ortalama)
     new_accuracy = (accuracy_rate * 0.9) + (score * 0.1)
     
     c.execute("INSERT INTO performance_logs (user_id, module_name, score) VALUES (1, ?, ?)", (module, score))
@@ -171,22 +157,18 @@ def update_level(new_level):
 if "xp" not in st.session_state: st.session_state.xp = total_xp
 if "seviye" not in st.session_state: st.session_state.seviye = current_level
 
-# API Anahtarı Yönetimi
 api_key = os.getenv("GROQ_API_KEY")
 if not api_key:
     with st.sidebar:
-        st.warning("⚠️ Sistemi başlatmak için Groq API anahtarınızı girin.")
-        api_key = st.text_input("🔑 Groq API Key:", type="password", key="api_key_input")
+        st.warning("⚠️ Sistemi başlatmak için API anahtarınızı girin.")
+        api_key = st.text_input("🔑 API Key:", type="password", key="api_key_input")
         if not api_key:
-            st.info("API anahtarını [console.groq.com](https://console.groq.com) adresinden ücretsiz alabilirsiniz.")
             st.stop()
 
 client = Groq(api_key=api_key)
 
-def get_json_from_llm(system_prompt, user_prompt, model="llama-3.1-70b-versatile"):
-    """
-    LLM'den güvenli, temizlenmiş ve ayrıştırılmış JSON verisi çeken merkezi motor.
-    """
+# SENİN ORİJİNAL MODELİN BURAYA EKLENDİ (openai/gpt-oss-120b)
+def get_json_from_llm(system_prompt, user_prompt, model="openai/gpt-oss-120b"):
     try:
         response = client.chat.completions.create(
             messages=[
@@ -194,13 +176,12 @@ def get_json_from_llm(system_prompt, user_prompt, model="llama-3.1-70b-versatile
                 {"role": "user", "content": user_prompt}
             ],
             model=model,
-            temperature=0.4, # Daha tutarlı JSON için sıcaklık düşürüldü
-            response_format={"type": "json_object"} # Groq JSON Modu Garantisi
+            temperature=0.4,
+            response_format={"type": "json_object"}
         )
         
         raw_content = response.choices[0].message.content.strip()
         
-        # Olası Markdown sızıntılarını zorla temizleme (Fail-safe)
         clean_content = re.sub(r"^```json\s*", "", raw_content, flags=re.IGNORECASE)
         clean_content = re.sub(r"^```\s*", "", clean_content)
         clean_content = re.sub(r"\s*```$", "", clean_content)
@@ -209,7 +190,6 @@ def get_json_from_llm(system_prompt, user_prompt, model="llama-3.1-70b-versatile
     
     except json.JSONDecodeError as e:
         st.error(f"Sistem Hatası (JSON Ayrıştırma): AI geçersiz bir veri formatı döndürdü. Lütfen işlemi tekrarlayın. \n\nDetay: {e}")
-        st.code(raw_content, language="json") # Hata ayıklama için bozuk çıktıyı göster
         return None
     except Exception as e:
         st.error(f"AI İletişim Hatası: {e}")
@@ -220,7 +200,6 @@ def get_json_from_llm(system_prompt, user_prompt, model="llama-3.1-70b-versatile
 # ==========================================
 st.sidebar.markdown('<div class="sidebar-header">🏛️ GOETHE AI<br><span style="font-size:12px; font-weight:400; color:#94a3b8; font-family:Inter;">Die Sprachakademie</span></div>', unsafe_allow_html=True)
 
-# İlerleme Çubuğu ve Genel Durum
 progress_val = (st.session_state.xp % 2000) / 2000
 st.sidebar.markdown(f"""
     <div style="background: rgba(30, 41, 59, 0.5); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #334155;">
@@ -239,7 +218,6 @@ st.sidebar.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# Seviye Seçimi (Zorluk Ayarı)
 yeni_seviye = st.sidebar.selectbox("Hedef CEFR Seviyesi (Zorluk):", ["A1 - Başlangıç", "A2 - Temel", "B1 - Orta", "B2 - İleri", "C1 - Uzman", "C2 - Anadil"], index=["A1", "A2", "B1", "B2", "C1", "C2"].index(st.session_state.seviye[:2]))
 secilen_kod = yeni_seviye[:2]
 if secilen_kod != st.session_state.seviye:
@@ -248,15 +226,12 @@ if secilen_kod != st.session_state.seviye:
 st.sidebar.markdown("---")
 sayfa = st.sidebar.radio("📚 ÖĞRENME MODÜLLERİ", ["📊 Akademi Paneli", "📖 Lesen (Anlama & Çıkarım)", "🎧 Hören (İşitsel Hafıza)", "✍️ Schreiben (Yapısal Üretim)", "🗣️ Sprechen (Akıcılık Odası)", "🧠 Akıllı Hafıza (SRS Kartları)"])
 st.sidebar.markdown("---")
-st.sidebar.caption("© 2026 Goethe AI Language System\nPowered by Groq LLaMA-3.1")
+st.sidebar.caption("© 2026 Goethe AI Language System")
 
 # ==========================================
 # 4. MODÜL İÇERİKLERİ
 # ==========================================
 
-# ------------------------------------------
-# DASHBOARD (AKADEMİ PANELİ)
-# ------------------------------------------
 if sayfa == "📊 Akademi Paneli":
     st.markdown('<div class="module-header">Genel Bakış</div>', unsafe_allow_html=True)
     st.markdown('<div class="module-subtitle">Öğrenme performansın ve bugünkü görevlerin. Dil öğrenimi bir süreçtir, tutarlılık en büyük gücündür.</div>', unsafe_allow_html=True)
@@ -300,9 +275,6 @@ if sayfa == "📊 Akademi Paneli":
                 st.markdown(f'<div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom: 1px solid #334155; padding-bottom:5px;"><span style="color:#94a3b8;">{log[1]}</span> <span style="color:{"#34d399" if log[1]>75 else "#fbbf24" if log[1]>50 else "#ef4444"}; font-weight:bold;">{log[1]} Puan</span></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-# ------------------------------------------
-# LESEN (OKUMA VE ÇIKARIM)
-# ------------------------------------------
 elif sayfa == "📖 Lesen (Anlama & Çıkarım)":
     st.markdown('<div class="module-header">📖 Lesen (Okuma)</div>', unsafe_allow_html=True)
     st.markdown('<div class="module-subtitle">Bağlamdan anlam çıkarma, kelime dağarcığını pekiştirme ve okuduğunu kavrama modülü.</div>', unsafe_allow_html=True)
@@ -414,9 +386,6 @@ elif sayfa == "📖 Lesen (Anlama & Çıkarım)":
                 st.session_state.lesen_cevap_verildi = False
                 st.rerun()
 
-# ------------------------------------------
-# HÖREN (İŞİTSEL HAFIZA)
-# ------------------------------------------
 elif sayfa == "🎧 Hören (İşitsel Hafıza)":
     st.markdown('<div class="module-header">🎧 Hören (Dinleme)</div>', unsafe_allow_html=True)
     st.markdown('<div class="module-subtitle">Kulağını Almancanın melodisine ve ritmine alıştır. Duyduğunu anında yazıya dök.</div>', unsafe_allow_html=True)
@@ -454,7 +423,6 @@ elif sayfa == "🎧 Hören (İşitsel Hafıza)":
         st.info(f"📍 **Bağlam:** {d.get('baglam', 'Bilinmiyor')}")
         
         try:
-            # gTTS ile ses oluşturma (Google TTS)
             tts = gTTS(text=d["almanca"], lang='de', slow=(zorluk == "Normal"))
             sound_fp = io.BytesIO()
             tts.write_to_fp(sound_fp)
@@ -465,7 +433,6 @@ elif sayfa == "🎧 Hören (İşitsel Hafıza)":
             
         except Exception as e:
             st.error("Ses motoru (gTTS) şu an yanıt vermiyor. Lütfen sayfayı yenileyin veya internet bağlantınızı kontrol edin.")
-            st.code(str(e))
             
         if not st.session_state.horen_cevap_verildi:
             cevap = st.text_area("Duyduğun metni BİREBİR Almanca olarak yaz (Dikte):", height=100)
@@ -473,7 +440,6 @@ elif sayfa == "🎧 Hören (İşitsel Hafıza)":
             if st.button("👩‍🏫 Teslim Et ve Karşılaştır", type="primary"):
                 if cevap.strip():
                     with st.spinner("Analiz ediliyor..."):
-                        # Harf duyarlılığı, noktalama ve boşluk toleransı sağlayan basit bir benzerlik kontrolü yerine AI'a soruyoruz
                         sys_prompt = "Sen bir dinleme-yazma (dikte) asistanısın."
                         user_prompt = f"""
                         Orijinal Seslendirilen Metin: {d['almanca']}
@@ -486,7 +452,7 @@ elif sayfa == "🎧 Hören (İşitsel Hafıza)":
                             "hatali_kelimeler": "Öğrencinin yanlış duyduğu veya yanlış yazdığı kelimeler ve nedenleri. Yoksa 'Hatasız' yaz."
                         }}"""
                         
-                        sonuc = get_json_from_llm(sys_prompt, user_prompt, model="llama-3.1-8b-instant") # Hızlı sonuç için daha küçük model
+                        sonuc = get_json_from_llm(sys_prompt, user_prompt, model="openai/gpt-oss-120b")
                         
                         if sonuc:
                             st.session_state.horen_cevap_verildi = True
@@ -524,9 +490,6 @@ elif sayfa == "🎧 Hören (İşitsel Hafıza)":
                 st.session_state.horen_cevap_verildi = False
                 st.rerun()
 
-# ------------------------------------------
-# SCHREIBEN (YAPISAL ÜRETİM)
-# ------------------------------------------
 elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
     st.markdown('<div class="module-header">✍️ Schreiben (Yazma)</div>', unsafe_allow_html=True)
     st.markdown('<div class="module-subtitle">Kendi cümlelerini kur, kuralları uygula ve aktif dil üretimini test et.</div>', unsafe_allow_html=True)
@@ -630,16 +593,12 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
                 st.session_state.schreiben_cevap_verildi = False
                 st.rerun()
 
-# ------------------------------------------
-# SPRECHEN (AKICILIK ODASI)
-# ------------------------------------------
 elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
     st.markdown('<div class="module-header">🗣️ Sprechen (Konuşma)</div>', unsafe_allow_html=True)
     st.markdown('<div class="module-subtitle">Klavye yok. Mikrofonu aç ve sanal dil partnerinle Almanca pratik yap. Hataların anında düzeltilir.</div>', unsafe_allow_html=True)
     
     if "sp_history" not in st.session_state: 
         st.session_state.sp_history = []
-        # İlk mesajı sistemden başlat
         st.session_state.sp_history.append({
             "role": "ai", 
             "de": f"Hallo! Lass uns auf Deutsch unterhalten. Wir üben auf dem {st.session_state.seviye} Niveau. Wie war dein Tag heute?", 
@@ -647,10 +606,8 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
             "correction": None
         })
     
-    # Sohbet Geçmişi Gösterimi
     st.markdown('<div style="height: 400px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column-reverse; background-color: rgba(15, 23, 42, 0.5); border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px;">', unsafe_allow_html=True)
     
-    # Flex-direction-reverse kullandığımız için mesajları tersten çizdiriyoruz
     for msg in st.session_state.sp_history:
         if msg["role"] == "user":
             st.markdown(f"""
@@ -671,13 +628,11 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
             
     st.markdown('</div>', unsafe_allow_html=True)
     
-    # Ses Girişi
     audio_bytes = st.audio_input("Mikrofona tıkla, konuş ve gönder:")
     
     if audio_bytes and client:
         with st.spinner("🎙️ Söylediklerin metne çevriliyor (Whisper)..."):
             try:
-                # STT İşlemi
                 transcription = client.audio.transcriptions.create(
                   file=("audio.wav", audio_bytes.read()),
                   model="whisper-large-v3",
@@ -686,15 +641,13 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
                 )
                 user_text = transcription.text
                 
-                # Yeni mesajı başa ekle (çünkü container reverse)
                 st.session_state.sp_history.insert(0, {"role": "user", "content": user_text})
                 
                 with st.spinner("🧠 Dil partnerin yanıt hazırlıyor..."):
                     sys_prompt = "Sen arkadaş canlısı bir Alman dil partnerisin. Öğrencinin seviyesine uygun, diyaloğu devam ettiren cevaplar ver. Ayrıca eğer öğrenci cümlesinde bariz bir gramer/artikel hatası yaptıysa bunu kısaca Türkçe olarak açıkla."
                     
-                    # Bağlamı (son 3 mesajı) LLM'e ver
                     context = ""
-                    for m in reversed(st.session_state.sp_history[:3]): # Sadece son 3 mesaj
+                    for m in reversed(st.session_state.sp_history[:3]):
                          if m['role'] == 'user': context += f"\nÖğrenci: {m['content']}"
                          else: context += f"\nSen: {m['de']}"
                     
@@ -721,20 +674,16 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
                             "tr": hoca_data.get("tr"),
                             "correction": hoca_data.get("correction")
                         })
-                        add_xp(20) # Konuşma pratiği daha yüksek XP verir
+                        add_xp(20)
                         st.rerun()
                         
             except Exception as e:
                 st.error(f"Mikrofon işlemi başarısız oldu. Detay: {e}")
 
-# ------------------------------------------
-# AKILLI HAFIZA (SRS KARTLARI)
-# ------------------------------------------
 elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
     st.markdown('<div class="module-header">🧠 Akıllı Hafıza Algoritması</div>', unsafe_allow_html=True)
     st.markdown('<div class="module-subtitle">SuperMemo-2 algoritması ile unutma eğrini hesaplıyor ve kelimeleri tam unutmak üzereyken karşına çıkarıyoruz.</div>', unsafe_allow_html=True)
     
-    # SRS Çekirdeği
     c.execute("SELECT * FROM vocabulary WHERE next_review <= ?", (bugun,))
     kelimeler = c.fetchall()
     
@@ -776,18 +725,16 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
         with col2:
             st.markdown('<div class="flashcard">', unsafe_allow_html=True)
             
-            # Kartın Ön Yüzü (Hedef Dil)
             if st.session_state.kart_yuzu == "on":
                 st.markdown(f'<div style="position:absolute; top:15px; right:20px; background:#334155; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:bold;">{seviye_etiketi}</div>', unsafe_allow_html=True)
                 st.markdown(f'<div class="flashcard-word">{de_kelime}</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True) # Kart sonu
+                st.markdown('</div>', unsafe_allow_html=True) 
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("🔄 Anlamını Hatırladım / Göster", use_container_width=True, type="primary"):
                     st.session_state.kart_yuzu = "arka"
                     st.rerun()
             
-            # Kartın Arka Yüzü (Ana Dil ve Örnekler)
             else:
                 st.markdown(f'<div class="flashcard-translation">{tr_kelime}</div>', unsafe_allow_html=True)
                 
@@ -797,12 +744,11 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     st.markdown(f'<div class="flashcard-example-tr">{ornek_tr}</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
                     
-                st.markdown('</div>', unsafe_allow_html=True) # Kart sonu
+                st.markdown('</div>', unsafe_allow_html=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 c1, c2, c3 = st.columns(3)
                 
-                # SRS Matematik Motoru (SuperMemo-2 İyileştirilmiş)
                 if c1.button("🔴 Unuttum", use_container_width=True):
                     yeni_ease = max(1.3, ease_factor - 0.2)
                     c.execute("UPDATE vocabulary SET interval=1, ease_factor=?, next_review=?, correct_streak=0, last_reviewed=? WHERE id=?", 
@@ -820,7 +766,6 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     st.session_state.kart_yuzu = "on"; st.rerun()
                     
                 if c3.button("🟢 Kolaydı", use_container_width=True):
-                    # Seriye bağlı bonus çarpan
                     bonus = 1.0 + (correct_streak * 0.05) 
                     yeni_ease = ease_factor + 0.1
                     yeni_int = max(3, int(interval * yeni_ease * bonus))
