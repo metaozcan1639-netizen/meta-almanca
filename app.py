@@ -257,7 +257,6 @@ st.sidebar.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# YENİ: Alt Kurlar Listesi
 seviye_listesi = ["A1.1", "A1.2", "A2.1", "A2.2", "B1.1", "B1.2", "B2.1", "B2.2", "C1", "C2"]
 mevcut_seviye = st.session_state.seviye if st.session_state.seviye in seviye_listesi else "A1.1"
 
@@ -268,7 +267,7 @@ if yeni_seviye != st.session_state.seviye:
 st.sidebar.markdown("---")
 sayfa = st.sidebar.radio("📚 ÖĞRENME MODÜLLERİ", [
     "📊 Akademi Paneli", 
-    "📚 Lektionen (Kur Eğitimi)",  # YENİ EĞİTİM MODÜLÜ
+    "📚 Lektionen (Kur Eğitimi)",
     "📖 Lesen (Anlama & Çıkarım)", 
     "🎧 Hören (İşitsel Hafıza)", 
     "✍️ Schreiben (Yapısal Üretim)", 
@@ -326,27 +325,26 @@ if sayfa == "📊 Akademi Paneli":
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ------------------------------------------
-# YENİ: EĞİTİM MODÜLÜ (LEKTIONEN)
+# YENİ: EĞİTİM MODÜLÜ (LEKTIONEN) DÜZELTİLMİŞ
 # ------------------------------------------
 elif sayfa == "📚 Lektionen (Kur Eğitimi)":
     st.markdown(f'<div class="module-header">📚 Kur Eğitimi: {st.session_state.seviye}</div>', unsafe_allow_html=True)
-    st.markdown('<div class="module-subtitle">Testlere girmeden önce bu kurun gramer iskeletini ve temel mantığını öğren.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Testlere girmeden önce bu kurun gramer iskeletini ve temel mantığını samimi bir anlatımla öğren.</div>', unsafe_allow_html=True)
     
     if "ders_icerigi" not in st.session_state: st.session_state.ders_icerigi = None
 
     if st.button("📖 Bugünün Dersini Hazırla", type="primary", use_container_width=True):
-        with st.spinner("Alman profesör müfredatı hazırlıyor..."):
-            sys_prompt = "Sen Almanya'nın en iyi dilbilgisi eğitmenisin."
+        with st.spinner("Alman profesör konuyu senin için hikayeleştiriyor..."):
+            sys_prompt = "Sen çok sevilen, samimi ve konuları hikayeleştirerek anlatan efsanevi bir Almanca öğretmenisin."
             user_prompt = f"""
             Öğrenci {st.session_state.seviye} seviyesinde. Bu kurda öğrenmesi gereken EN KRİTİK gramer konusunu seç ve detaylı bir ders anlatımı yap.
             JSON Formatı:
             {{
                 "konu_basligi": "Gramer Konusunun Adı",
-                "turkce_anlatim": "Konunun mantığını, neden kullanıldığını ve Türkçe'den farkını anlatan detaylı açıklama.",
-                "kurallar": ["Kural 1", "Kural 2"],
+                "turkce_anlatim": "Konuyu karşında bir insan varmış gibi samimi, akıcı, esprili ve gündelik hayattan benzetmeler (analojiler) yaparak anlattığın detaylı metin. Asla robotik ve kopuk kısa cümleler kurma. Bütüncül bir paragraf olsun.",
+                "kurallar": ["Konunun en önemli kuralları (Uzun, akıcı ve açıklayıcı cümlelerle)"],
                 "ornekler": [
-                    {{"de": "Almanca örnek", "tr": "Türkçe çeviri"}},
-                    {{"de": "Almanca örnek 2", "tr": "Türkçe çeviri 2"}}
+                    {{"de": "Almanca örnek", "tr": "Türkçe çeviri"}}
                 ]
             }}"""
             data = get_json_from_llm(sys_prompt, user_prompt)
@@ -356,26 +354,34 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
 
     if st.session_state.ders_icerigi:
         d = st.session_state.ders_icerigi
-        st.markdown(f"""
-        <div class="lesson-box">
-            <h2 style="color: #a855f7; margin-top:0;">{d.get('konu_basligi')}</h2>
-            <p style="font-size: 17px; line-height: 1.6; color: #f8fafc;">{d.get('turkce_anlatim')}</p>
-            
-            <h4 style="color: #fbbf24; margin-top: 20px;">📌 Altın Kurallar</h4>
-            <ul style="color: #cbd5e1; font-size: 16px;">
-                {''.join([f"<li>{kural}</li>" for kural in d.get('kurallar', [])])}
-            </ul>
-            
-            <h4 style="color: #34d399; margin-top: 20px;">📝 Örnek Cümleler</h4>
-            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
-                {''.join([f"<div style='margin-bottom:10px;'><b>🇩🇪 {orn['de']}</b><br><span style='color:#94a3b8;'>🇹🇷 {orn['tr']}</span></div>" for orn in d.get('ornekler', [])])}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        
+        kurallar_html = "".join([f"<li style='margin-bottom: 8px;'>{kural}</li>" for kural in d.get('kurallar', [])])
+        ornekler_html = "".join([f"<div style='margin-bottom:12px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px;'><b style='color:#60a5fa; font-size:16px;'>🇩🇪 {orn['de']}</b><br><span style='color:#94a3b8; font-size:15px;'>🇹🇷 {orn['tr']}</span></div>" for orn in d.get('ornekler', [])])
+        
+        # HTML bloğunu Markdown kod bloklarına dönüştürmemesi için sola tamamen yasladık.
+        html_icerik = f"""
+<div class="lesson-box">
+<h2 style="color: #a855f7; margin-top:0;">{d.get('konu_basligi')}</h2>
+<p style="font-size: 17px; line-height: 1.8; color: #f8fafc; margin-bottom: 25px;">{d.get('turkce_anlatim')}</p>
+
+<h4 style="color: #fbbf24; margin-top: 20px; border-bottom: 1px solid #fbbf24; padding-bottom: 5px;">📌 Altın Kurallar</h4>
+<ul style="color: #cbd5e1; font-size: 16px; line-height: 1.6;">
+{kurallar_html}
+</ul>
+
+<h4 style="color: #34d399; margin-top: 25px; border-bottom: 1px solid #34d399; padding-bottom: 5px;">📝 Örnek Cümleler</h4>
+<div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+{ornekler_html}
+</div>
+</div>
+"""
+        st.markdown(html_icerik, unsafe_allow_html=True)
         
         if st.button("✅ Dersi Anladım, XP Kazan ve Pratiğe Geç"):
-            add_xp(30)
-            st.success("Tebrikler! Artık bu konuyu test modüllerinde uygulayabilirsin.")
+            st.session_state.xp += 30
+            c.execute("UPDATE stats SET total_xp = ? WHERE user_id=1", (st.session_state.xp,))
+            conn.commit()
+            st.success("Tebrikler! +30 XP kazandın. Artık bu konuyu test modüllerinde uygulayabilirsin.")
 
 elif sayfa == "📖 Lesen (Anlama & Çıkarım)":
     st.markdown('<div class="module-header">📖 Lesen (Okuma)</div>', unsafe_allow_html=True)
@@ -783,7 +789,7 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
                 st.error(f"Mikrofon işlemi başarısız oldu. Detay: {e}")
 
 # ------------------------------------------
-# YENİ: GÖRSEL ZEKALI SRS KARTLARI
+# YENİ: GÖRSEL ZEKALI SRS KARTLARI (HATASIZ)
 # ------------------------------------------
 elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
     st.markdown('<div class="module-header">🧠 Görsel Akıllı Hafıza</div>', unsafe_allow_html=True)
@@ -827,7 +833,6 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
         kart_verisi = kelimeler[0]
         k_id, de_kelime, tr_kelime, seviye_etiketi, ease_factor, interval = kart_verisi[0:6]
         ornek_de, ornek_tr, correct_streak = kart_verisi[7:10]
-        # DB'de emoji sütunu varsa al, yoksa standart ikon koy
         emoji = kart_verisi[11] if len(kart_verisi) > 11 else "💠"
         
         st.markdown(f'<div style="text-align:right; color:#94a3b8; margin-bottom:10px;">Bekleyen Kart: <b>{len(kelimeler)}</b> | Mevcut Çarpan: <b>x{ease_factor:.1f}</b></div>', unsafe_allow_html=True)
@@ -888,6 +893,7 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     c.execute("UPDATE vocabulary SET interval=?, ease_factor=?, next_review=?, correct_streak=correct_streak+1, last_reviewed=? WHERE id=?", 
                               (yeni_int, yeni_ease, bugun + timedelta(days=yeni_int), bugun, k_id))
                     
+                    # NameError hatası tamamen çözüldü
                     c.execute("UPDATE stats SET total_xp = total_xp + 5 WHERE user_id=1")
                     conn.commit()
                     st.session_state.xp += 5
