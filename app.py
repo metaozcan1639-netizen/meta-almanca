@@ -300,7 +300,7 @@ def get_json_from_llm(system_prompt, user_prompt, model="openai/gpt-oss-120b"):
     cefr_kurali = CEFR_RULES.get(st.session_state.seviye, "")
     ders_kurali = ""
     if st.session_state.gunun_konusu:
-        ders_kurali = f"\nÖğrencinin bugünkü aktif ders konusu: '{st.session_state.gunun_konusu}'. İçeriği kesinlikle bu konuya odakla."
+        ders_kurali = f"\nÖğrencinin bugünkü aktif ders konusu: '{st.session_state.gunun_konusu}'. Eğer test üretiyorsan içeriği kesinlikle bu konuya odakla."
         
     full_system_prompt = f"{system_prompt}\n\nDİKKAT! Öğrenci {st.session_state.seviye} seviyesinde. KESİN KURAL: {cefr_kurali}{ders_kurali}"
     
@@ -410,7 +410,7 @@ if sayfa == "📊 Akademi Paneli":
         st.info(f"📌 **Günün Aktif Konusu:** {st.session_state.gunun_konusu} (Sınavlar bu konuya göre üretilecek)")
 
 # ------------------------------------------
-# SAYFALI VE KAPSAMLI EĞİTİM MODÜLÜ (LEKTIONEN)
+# SAYFALI VE KAPSAMLI EĞİTİM MODÜLÜ
 # ------------------------------------------
 elif sayfa == "📚 Lektionen (Kur Eğitimi)":
     st.markdown(f'<div class="module-header">📚 Kur Eğitimi: {st.session_state.seviye}</div>', unsafe_allow_html=True)
@@ -978,7 +978,7 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     st.rerun()
 
 # ------------------------------------------
-# SÖZLÜK VE KELİME EKLE (YENİ)
+# SÖZLÜK VE KELİME EKLE
 # ------------------------------------------
 elif sayfa == "➕ Sözlük & Kelime Ekle":
     st.markdown('<div class="module-header">📓 Kişisel Sözlüğüm</div>', unsafe_allow_html=True)
@@ -1030,17 +1030,18 @@ elif sayfa == "➕ Sözlük & Kelime Ekle":
             st.info("Sözlüğünde henüz kelime yok.")
 
 # ------------------------------------------
-# YENİ: SINAV MERKEZİ (PRÜFUNG) AI DESTEKLİ
+# SINAV MERKEZİ (PRÜFUNG) AI DESTEKLİ & PUANLAMALI
 # ------------------------------------------
 elif sayfa == "📝 Sınav Merkezi (Prüfung)":
     st.markdown('<div class="module-header">📝 Zertifikat Simülasyonu</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="module-subtitle">{st.session_state.seviye} seviyesi için tam kapsamlı Goethe sınav formatı. Tüm içerik yapay zeka tarafından seviyene uygun, taze olarak üretilir.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="module-subtitle">{st.session_state.seviye} seviyesi için tam kapsamlı Goethe sınav formatı. Puanlama sistemi aktiftir.</div>', unsafe_allow_html=True)
     
     tab1, tab2 = st.tabs(["📖 Lesen (Okuma Sınavı)", "🎧 Hören (Dinleme Sınavı)"])
     
     # === TAB 1: LESEN SINAVI ===
     with tab1:
-        if "sinav_lesen_data" not in st.session_state: st.session_state.sinav_lesen_data = None
+        if "sinav_lesen_data" not in st.session_state: 
+            st.session_state.sinav_lesen_data = None
         
         if st.button("🤖 Kapsamlı Lesen Sınavı Üret (Tüm Bölümler)", type="primary"):
             with st.spinner("Sınav kağıdın Goethe standartlarında hazırlanıyor... Lütfen bekle."):
@@ -1064,8 +1065,14 @@ elif sayfa == "📝 Sınav Merkezi (Prüfung)":
                             {{"metin": "Paragraf 2 metni...", "dogru_baslik": "5. Seyahat"}}
                         ]
                     }},
-                    "bosluk_doldurma": "Gestern bin ich in die Stadt (1) _______, um (2) _______ zu kaufen.",
-                    "kelime_tamamlama": "Das Wette_ (1) ist heute sehr s____ (2)."
+                    "bosluk_doldurma": {{
+                        "metin": "Gestern bin ich in die Stadt (1) _______, um (2) _______ zu kaufen.",
+                        "dogru_cevaplar": ["gegangen", "Kleidung"]
+                    }},
+                    "kelime_tamamlama": {{
+                        "metin": "Das Wette_ (1) ist heute sehr s____ (2).",
+                        "dogru_cevaplar": ["r", "chön"]
+                    }}
                 }}"""
                 
                 data = get_json_from_llm(sys_prompt, user_prompt)
@@ -1102,21 +1109,24 @@ elif sayfa == "📝 Sınav Merkezi (Prüfung)":
                 
             st.markdown("---")
             st.markdown("### ✏️ Bölüm 3: Boşluk Doldurma")
-            st.markdown(f"*{d.get('bosluk_doldurma', '')}*")
+            bd = d.get("bosluk_doldurma", {})
+            st.markdown(f"*{bd.get('metin', '')}*")
             col_bd1, col_bd2 = st.columns(2)
             with col_bd1: st.text_input("1. Boşluk:", key="s_bd1")
             with col_bd2: st.text_input("2. Boşluk:", key="s_bd2")
             
             st.markdown("---")
             st.markdown("### 🔤 Bölüm 4: Kelime Tamamlama")
-            st.markdown(f"*{d.get('kelime_tamamlama', '')}*")
+            kt = d.get("kelime_tamamlama", {})
+            st.markdown(f"*{kt.get('metin', '')}*")
             col_kt1, col_kt2 = st.columns(2)
             with col_kt1: st.text_input("1. Kelimenin tamamı:", key="s_kt1")
             with col_kt2: st.text_input("2. Kelimenin tamamı:", key="s_kt2")
 
     # === TAB 2: HÖREN SINAVI ===
     with tab2:
-        if "sinav_horen_data" not in st.session_state: st.session_state.sinav_horen_data = None
+        if "sinav_horen_data" not in st.session_state: 
+            st.session_state.sinav_horen_data = None
         
         if st.button("🎧 Kapsamlı Hören Sınavı Üret", type="primary"):
             with st.spinner("Dinleme sınavı oluşturuluyor... (Ses dosyası uzun olacağı için bu işlem 30-40 saniye sürebilir)"):
@@ -1177,7 +1187,72 @@ elif sayfa == "📝 Sınav Merkezi (Prüfung)":
                 )
                 
     st.markdown("---")
-    if st.button("📝 Sınavı Bitir ve Teslim Et", type="primary", use_container_width=True):
-        st.success("Sınav kağıdın başarıyla teslim edildi! (Bu simülasyondur, asıl sınavlarında başarılar dilerim!)")
+    
+    # === PUANLAMA VE SONUÇ SİSTEMİ ===
+    if st.button("📝 Sınavı Bitir, Puanla ve Teslim Et", type="primary", use_container_width=True):
+        toplam_soru = 0
+        dogru_cevap = 0
+        
+        # Lesen Puanlama
+        if st.session_state.sinav_lesen_data:
+            ld = st.session_state.sinav_lesen_data
+            
+            # Okuma
+            for i, sq in enumerate(ld.get("okuma_sorulari", [])):
+                toplam_soru += 1
+                if st.session_state.get(f"sr_{i}") == sq.get("dogru"):
+                    dogru_cevap += 1
+                    
+            # Eşleştirme
+            for i, p in enumerate(ld.get("eslestirme", {}).get("paragraflar", [])):
+                toplam_soru += 1
+                if st.session_state.get(f"sb_{i}") == p.get("dogru_baslik"):
+                    dogru_cevap += 1
+            
+            # Boşluk Doldurma
+            bd_cevaplar = ld.get("bosluk_doldurma", {}).get("dogru_cevaplar", [])
+            if len(bd_cevaplar) >= 2:
+                toplam_soru += 2
+                if st.session_state.get("s_bd1", "").strip().lower() == bd_cevaplar[0].lower(): dogru_cevap += 1
+                if st.session_state.get("s_bd2", "").strip().lower() == bd_cevaplar[1].lower(): dogru_cevap += 1
+                
+            # Kelime Tamamlama
+            kt_cevaplar = ld.get("kelime_tamamlama", {}).get("dogru_cevaplar", [])
+            if len(kt_cevaplar) >= 2:
+                toplam_soru += 2
+                if st.session_state.get("s_kt1", "").strip().lower() == kt_cevaplar[0].lower(): dogru_cevap += 1
+                if st.session_state.get("s_kt2", "").strip().lower() == kt_cevaplar[1].lower(): dogru_cevap += 1
+
+        # Hören Puanlama
+        if st.session_state.sinav_horen_data:
+            hd = st.session_state.sinav_horen_data
+            for i, sq in enumerate(hd.get("sorular", [])):
+                toplam_soru += 1
+                cevap_secimi = st.session_state.get(f"s_tf_{i}")
+                if cevap_secimi:
+                    # "Doğru (Richtig)" kelimesinin sadece ilk kelimesini al "Doğru"
+                    temiz_cevap = cevap_secimi.split(" ")[0]
+                    if temiz_cevap == sq.get("dogru_cevap"):
+                        dogru_cevap += 1
+
+        # Sonuç Gösterimi
+        if toplam_soru == 0:
+            st.warning("Puan hesaplanamadı. Lütfen önce yukarıdaki butonlardan sınav üretin ve soruları yanıtlayın.")
+        else:
+            basari_yuzdesi = int((dogru_cevap / toplam_soru) * 100)
+            
+            st.markdown("### 📊 Sınav Sonuç Raporu")
+            
+            if basari_yuzdesi >= 60:
+                st.success(f"🎉 **TEBRİKLER! Goethe Zertifikat simülasyonunu başarıyla geçtin!** \n\n✅ **Doğru Sayısı:** {dogru_cevap}/{toplam_soru} \n🏆 **Başarı Oranı:** %{basari_yuzdesi}")
+                st.balloons()
+                
+                # Sınav geçme ödülü (Sadece bir kere tetiklenmesi için küçük bir hile kullanılabilir ama şimdilik direkt veriyoruz)
+                c.execute("UPDATE stats SET total_xp = total_xp + 150 WHERE user_id=1")
+                conn.commit()
+                st.session_state.xp += 150
+                st.toast("🏆 Sınavı geçtiğin için +150 XP Kazandın!", icon="🎓")
+            else:
+                st.error(f"❌ **Maalesef Sınavı Geçemedin (Geçme notu: %60).** \n\n✅ **Doğru Sayısı:** {dogru_cevap}/{toplam_soru} \n📉 **Başarı Oranı:** %{basari_yuzdesi} \n\n*Lütfen Lektionen modülüne dönerek tekrar çalış.*")
 
 conn.close()
