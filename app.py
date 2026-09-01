@@ -300,7 +300,7 @@ def get_json_from_llm(system_prompt, user_prompt, model="openai/gpt-oss-120b"):
     cefr_kurali = CEFR_RULES.get(st.session_state.seviye, "")
     ders_kurali = ""
     if st.session_state.gunun_konusu:
-        ders_kurali = f"\nÖğrencinin bugünkü aktif ders konusu: '{st.session_state.gunun_konusu}'. Eğer test üretiyorsan içeriği kesinlikle bu konuya ve kurallarına odakla."
+        ders_kurali = f"\nÖğrencinin bugünkü aktif ders konusu: '{st.session_state.gunun_konusu}'. İçeriği kesinlikle bu konuya odakla."
         
     full_system_prompt = f"{system_prompt}\n\nDİKKAT! Öğrenci {st.session_state.seviye} seviyesinde. KESİN KURAL: {cefr_kurali}{ders_kurali}"
     
@@ -383,7 +383,7 @@ sayfa = st.sidebar.radio("📚 ÖĞRENME MODÜLLERİ", [
 ])
 
 # ==========================================
-# 5. MODÜL İÇERİKLERİ BAŞLANGICI
+# 5. MODÜL İÇERİKLERİ
 # ==========================================
 
 if sayfa == "📊 Akademi Paneli":
@@ -409,6 +409,9 @@ if sayfa == "📊 Akademi Paneli":
     if st.session_state.gunun_konusu: 
         st.info(f"📌 **Günün Aktif Konusu:** {st.session_state.gunun_konusu} (Sınavlar bu konuya göre üretilecek)")
 
+# ------------------------------------------
+# SAYFALI VE KAPSAMLI EĞİTİM MODÜLÜ (LEKTIONEN)
+# ------------------------------------------
 elif sayfa == "📚 Lektionen (Kur Eğitimi)":
     st.markdown(f'<div class="module-header">📚 Kur Eğitimi: {st.session_state.seviye}</div>', unsafe_allow_html=True)
     st.markdown('<div class="module-subtitle">Kapsamlı ders anlatımı, tablolar ve sesli örneklerle konuyu özümse.</div>', unsafe_allow_html=True)
@@ -450,13 +453,13 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
                     {{
                         "baslik": "Sayfa 1", 
                         "anlatim": "Metin", 
-                        "tablo": "Markdown tablo", 
+                        "tablo": "Markdown tablo (yoksa boş bırak)", 
                         "ornekler": [{{"de": "Almanca", "tr": "Türkçe"}}]
                     }}, 
                     {{
                         "baslik": "Sayfa 2", 
                         "anlatim": "Metin", 
-                        "tablo": "Tablo", 
+                        "tablo": "Tablo (yoksa boş bırak)", 
                         "ornekler": [{{"de": "Almanca", "tr": "Türkçe"}}]
                     }}
                 ], 
@@ -549,11 +552,8 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
                         
                         st.success(f"Tebrikler! Dersi tamamladın, +50 XP kazandın ve {eklenen} kelime Sözlüğe eklendi!")
 
-# ==========================================
-# BURASI BÖLÜM 1'İN SONUDUR. BÖLÜM 2 İÇİN "DEVAM" YAZINIZ.
-# ==========================================
 # ------------------------------------------
-# Lesen (Okuma) - SORUYA TÜRKÇE EKLENDİ
+# Lesen (Okuma) - Günlük Pratik
 # ------------------------------------------
 elif sayfa == "📖 Lesen (Okuma ve Çıkarım)":
     st.markdown(f'<div class="module-header">📖 Lesen ({st.session_state.seviye})</div>', unsafe_allow_html=True)
@@ -668,30 +668,32 @@ elif sayfa == "📖 Lesen (Okuma ve Çıkarım)":
                 st.rerun()
 
 # ------------------------------------------
-# Hören (Dinleme Testi) - ÇOKTAN SEÇMELİ SORU
+# Hören (Dinleme Testi) - UZUN VE DETAYLI
 # ------------------------------------------
 elif sayfa == "🎧 Hören (Dinleme Testi)":
     st.markdown(f'<div class="module-header">🎧 Hören ({st.session_state.seviye})</div>', unsafe_allow_html=True)
-    st.markdown('<div class="module-subtitle">Sesi dinle ve soruyu cevapla (Hörverstehen).</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Sesi dinle ve soruyu cevapla (Hörverstehen). Uzun metinler seni bekliyor.</div>', unsafe_allow_html=True)
     
     if "horen_data" not in st.session_state: 
         st.session_state.horen_data = None
     if "horen_cevap_verildi" not in st.session_state: 
         st.session_state.horen_cevap_verildi = False
 
-    if st.button("🎧 Dinleme Sınavı Hazırla", type="primary", use_container_width=True):
-        with st.spinner("Sınav kurgulanıyor..."):
+    if st.button("🎧 Kapsamlı Dinleme Sınavı Hazırla", type="primary", use_container_width=True):
+        with st.spinner("Dinleme sınavı kurgulanıyor... (Uzun metin oluşturuluyor)"):
             st.session_state.horen_cevap_verildi = False
             sys_prompt = "Sen uzman bir Alman sınav denetmenisin."
             user_prompt = f"""
             Dinleme anlama testi (Hörverstehen) hazırla.
+            Metin, öğrencinin seviyesine uygun, **EN AZ 100-150 KELİMELİK UZUN BİR HİKAYE VEYA DİYALOG** olmalıdır. Kısa olmasın.
+            
             JSON Formatı:
             {{
-                "dinleme_metni": "Öğrencinin dinleyeceği 2-3 cümlelik Almanca metin.",
+                "dinleme_metni": "Uzun, detaylı Almanca metin.",
                 "turkce_ceviri": "Metnin çevirisi",
                 "soru": "Metinle ilgili Almanca bir okuduğunu anlama sorusu.",
-                "secenekler": ["A) Seçenek 1", "B) Seçenek 2", "C) Seçenek 3"],
-                "dogru_cevap": "B) Seçenek 2",
+                "secenekler": ["A) ...", "B) ...", "C) ..."],
+                "dogru_cevap": "B) ...",
                 "aciklama": "Neden bu cevap doğru? Türkçe açıkla."
             }}"""
             
@@ -704,10 +706,11 @@ elif sayfa == "🎧 Hören (Dinleme Testi)":
         d = st.session_state.horen_data
         
         try:
-            tts = gTTS(text=d["dinleme_metni"], lang='de')
-            sound_fp = io.BytesIO()
-            tts.write_to_fp(sound_fp)
-            
+            with st.spinner("🔊 Ses dosyası işleniyor (Metin uzun olduğu için biraz sürebilir)..."):
+                tts = gTTS(text=d["dinleme_metni"], lang='de')
+                sound_fp = io.BytesIO()
+                tts.write_to_fp(sound_fp)
+                
             st.markdown('<div style="background:#1e293b; padding:20px; border-radius:12px; margin-bottom:20px; text-align:center;">', unsafe_allow_html=True)
             st.audio(sound_fp, format='audio/mp3')
             st.markdown('</div>', unsafe_allow_html=True)
@@ -715,13 +718,13 @@ elif sayfa == "🎧 Hören (Dinleme Testi)":
             st.error("Ses motoru çalışmadı.")
             
         if not st.session_state.horen_cevap_verildi:
-            st.markdown(f"### ❓ Soru: {d['soru']}")
+            st.markdown(f"### ❓ Soru: {d.get('soru', '')}")
             secim = st.radio("Cevabını seç:", d.get('secenekler', []))
             
             if st.button("👩‍🏫 Cevapla", type="primary"):
                 st.session_state.horen_cevap_verildi = True
                 st.session_state.horen_secim = secim
-                if secim == d['dogru_cevap']:
+                if secim == d.get('dogru_cevap'):
                     update_performance("Hören", 100)
                 else:
                     update_performance("Hören", 0)
@@ -729,16 +732,16 @@ elif sayfa == "🎧 Hören (Dinleme Testi)":
         
         if st.session_state.horen_cevap_verildi:
             secim = st.session_state.horen_secim
-            if secim == d['dogru_cevap']:
+            if secim == d.get('dogru_cevap'):
                 st.success(f"🎉 Doğru Cevap! (+50 XP)")
             else:
-                st.error(f"❌ Yanlış Cevap. Seçimin: {secim} | Doğrusu: {d['dogru_cevap']}")
+                st.error(f"❌ Yanlış Cevap. Seçimin: {secim} | Doğrusu: {d.get('dogru_cevap')}")
                 
-            st.info(f"**Açıklama:** {d['aciklama']}")
+            st.info(f"**Açıklama:** {d.get('aciklama')}")
             
             with st.expander("📖 Dinlediğin Metni ve Çevirisini Gör"):
-                st.markdown(f"**🇩🇪 Almanca:** {d['dinleme_metni']}")
-                st.markdown(f"**🇹🇷 Türkçe:** {d['turkce_ceviri']}")
+                st.markdown(f"**🇩🇪 Almanca:** {d.get('dinleme_metni')}")
+                st.markdown(f"**🇹🇷 Türkçe:** {d.get('turkce_ceviri')}")
             
             if st.button("🔄 Yeni Sınav"):
                 st.session_state.horen_data = None
@@ -913,7 +916,7 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
             
         kart_verisi = kelimeler[0]
         k_id, de_kelime, tr_kelime, seviye_etiketi, ease_factor, interval = kart_verisi[0:6]
-        ornek_de, ornek_tr, correct_streak = kart_verisi[7:10]
+        ornek_de, ornek_tr, correct_streak = kart_verisi
         emoji = kart_verisi[11] if len(kart_verisi) > 11 and kart_verisi[11] else "💠"
         
         st.markdown(f'<div style="text-align:right; color:#94a3b8; margin-bottom:10px;">Bekleyen Kart: <b>{len(kelimeler)}</b> | Çarpan: <b>x{ease_factor:.1f}</b></div>', unsafe_allow_html=True)
@@ -1027,76 +1030,154 @@ elif sayfa == "➕ Sözlük & Kelime Ekle":
             st.info("Sözlüğünde henüz kelime yok.")
 
 # ------------------------------------------
-# YENİ: SINAV MERKEZİ (PRÜFUNG)
+# YENİ: SINAV MERKEZİ (PRÜFUNG) AI DESTEKLİ
 # ------------------------------------------
 elif sayfa == "📝 Sınav Merkezi (Prüfung)":
     st.markdown('<div class="module-header">📝 Zertifikat Simülasyonu</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="module-subtitle">{st.session_state.seviye} seviyesi için tam kapsamlı Goethe sınav formatı.</div>', unsafe_allow_html=True)
-    
-    if st.button("🤖 Yapay Zeka ile Örnek Sınav Üret", type="primary"):
-        st.success("Test formatı başarıyla yüklendi! Lütfen aşağıdaki sekmelerden sınavı çözmeye başlayın.")
+    st.markdown(f'<div class="module-subtitle">{st.session_state.seviye} seviyesi için tam kapsamlı Goethe sınav formatı. Tüm içerik yapay zeka tarafından seviyene uygun, taze olarak üretilir.</div>', unsafe_allow_html=True)
     
     tab1, tab2 = st.tabs(["📖 Lesen (Okuma Sınavı)", "🎧 Hören (Dinleme Sınavı)"])
     
+    # === TAB 1: LESEN SINAVI ===
     with tab1:
-        st.markdown("### 📄 Bölüm 1: Metin ve Okuma Anlama")
-        st.info("Buraya Özgür'ün dosyasındaki ana okuma metni yapıştırılacak.")
-        st.markdown("**Soru 1:** Yazarın asıl anlatmak istediği nedir? *(Örnek Soru)*")
-        st.radio("1. Soru için cevabını seç:", ["A) Seçenek 1", "B) Seçenek 2", "C) Seçenek 3"], index=None, key="r1")
-        st.radio("2. Soru için cevabını seç:", ["A) Seçenek 1", "B) Seçenek 2", "C) Seçenek 3"], index=None, key="r2")
-        st.radio("3. Soru için cevabını seç:", ["A) Seçenek 1", "B) Seçenek 2", "C) Seçenek 3"], index=None, key="r3")
+        if "sinav_lesen_data" not in st.session_state: st.session_state.sinav_lesen_data = None
         
-        st.markdown("---")
-        st.markdown("### 🧩 Bölüm 2: Başlık Eşleştirme")
-        st.info("Buraya 10 adet paragraf metni eklenecek.")
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            st.markdown("""
-            **Verilen Başlıklar:**
-            1. Umwelt
-            2. Technologie
-            3. Gesundheit
-            *(Kalan 7 başlık dosyadan çekilecek)*
-            """)
-        with col2:
-            st.selectbox("Paragraf A için uygun başlık:", ["Seçiniz...", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"], key="b1")
-            st.selectbox("Paragraf B için uygun başlık:", ["Seçiniz...", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"], key="b2")
+        if st.button("🤖 Kapsamlı Lesen Sınavı Üret (Tüm Bölümler)", type="primary"):
+            with st.spinner("Sınav kağıdın Goethe standartlarında hazırlanıyor... Lütfen bekle."):
+                sys_prompt = "Sen Goethe Institut standartlarında sınav hazırlayan bir uzmansın."
+                user_prompt = f"""
+                Öğrencinin seviyesi {st.session_state.seviye}.
+                Lütfen bu seviyeye tam uygun, zorlayıcı bir okuma (Lesen) sınavı hazırla.
+                
+                JSON Formatı KESİNLİKLE şu olmalıdır:
+                {{
+                    "okuma_metni": "En az 150 kelimelik, akademik veya günlük hayattan uzun bir metin.",
+                    "okuma_sorulari": [
+                        {{"soru": "Soru 1", "secenekler": ["A) ..", "B) ..", "C) ..", "D) .."], "dogru": "A) .."}},
+                        {{"soru": "Soru 2", "secenekler": ["A) ..", "B) ..", "C) ..", "D) .."], "dogru": "C) .."}},
+                        {{"soru": "Soru 3", "secenekler": ["A) ..", "B) ..", "C) ..", "D) .."], "dogru": "B) .."}}
+                    ],
+                    "eslestirme": {{
+                        "basliklar": ["1. Çevre", "2. Teknoloji", "3. Sağlık", "4. Eğitim", "5. Seyahat"],
+                        "paragraflar": [
+                            {{"metin": "Paragraf 1 metni...", "dogru_baslik": "2. Teknoloji"}},
+                            {{"metin": "Paragraf 2 metni...", "dogru_baslik": "5. Seyahat"}}
+                        ]
+                    }},
+                    "bosluk_doldurma": "Gestern bin ich in die Stadt (1) _______, um (2) _______ zu kaufen.",
+                    "kelime_tamamlama": "Das Wette_ (1) ist heute sehr s____ (2)."
+                }}"""
+                
+                data = get_json_from_llm(sys_prompt, user_prompt)
+                if data:
+                    st.session_state.sinav_lesen_data = data
+                    st.rerun()
+
+        if st.session_state.sinav_lesen_data:
+            d = st.session_state.sinav_lesen_data
             
-        st.markdown("---")
-        st.markdown("### ✏️ Bölüm 3: Boşluk Doldurma")
-        st.info("Paragraf arası kelime doldurma alanı.")
-        st.markdown("Gestern bin ich in die Stadt **(1)** _______, um neue Kleidung zu kaufen.")
-        st.text_input("1. Boşluk için cevabını yaz:", placeholder="Cevabınızı buraya yazın...", key="bd1")
-        
-        st.markdown("---")
-        st.markdown("### 🔤 Bölüm 4: Kelime Tamamlama")
-        st.info("Paragraftaki eksik harfleri yazıyla tamamlama alanı.")
-        st.markdown("Das Wette_ **(1)** ist heute sehr s____ **(2)**.")
-        col_k1, col_k2 = st.columns(2)
-        with col_k1: 
-            st.text_input("1. Kelimenin tamamı:", placeholder="Wette...", key="kt1")
-        with col_k2: 
-            st.text_input("2. Kelimenin tamamı:", placeholder="s...", key="kt2")
-        
+            st.markdown("### 📄 Bölüm 1: Metin ve Okuma Anlama")
+            st.info(d.get("okuma_metni", ""))
+            
+            sorular = d.get("okuma_sorulari", [])
+            for i, soru_data in enumerate(sorular):
+                st.markdown(f"**Soru {i+1}:** {soru_data.get('soru')}")
+                st.radio(f"{i+1}. Soru için cevabını seç:", soru_data.get('secenekler', []), index=None, key=f"sr_{i}")
+                
+            st.markdown("---")
+            st.markdown("### 🧩 Bölüm 2: Başlık Eşleştirme")
+            eslestirme = d.get("eslestirme", {})
+            basliklar = eslestirme.get("basliklar", [])
+            paragraflar = eslestirme.get("paragraflar", [])
+            
+            col_b1, col_b2 = st.columns([1, 1])
+            with col_b1:
+                st.markdown("**Verilen Başlıklar:**")
+                for b in basliklar:
+                    st.markdown(f"- {b}")
+            with col_b2:
+                for i, p in enumerate(paragraflar):
+                    st.markdown(f"**Paragraf {i+1}:** {p.get('metin')}")
+                    st.selectbox(f"Paragraf {i+1} için uygun başlık:", ["Seçiniz..."] + basliklar, key=f"sb_{i}")
+                
+            st.markdown("---")
+            st.markdown("### ✏️ Bölüm 3: Boşluk Doldurma")
+            st.markdown(f"*{d.get('bosluk_doldurma', '')}*")
+            col_bd1, col_bd2 = st.columns(2)
+            with col_bd1: st.text_input("1. Boşluk:", key="s_bd1")
+            with col_bd2: st.text_input("2. Boşluk:", key="s_bd2")
+            
+            st.markdown("---")
+            st.markdown("### 🔤 Bölüm 4: Kelime Tamamlama")
+            st.markdown(f"*{d.get('kelime_tamamlama', '')}*")
+            col_kt1, col_kt2 = st.columns(2)
+            with col_kt1: st.text_input("1. Kelimenin tamamı:", key="s_kt1")
+            with col_kt2: st.text_input("2. Kelimenin tamamı:", key="s_kt2")
+
+    # === TAB 2: HÖREN SINAVI ===
     with tab2:
-        st.markdown("### 🎧 Dinleme Sınavı (4 Bölüm Kombine)")
-        st.info("Özgür'ün ilettiği 4 bölümlük birleşik ses dosyası buraya gelecek.")
-        st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", format="audio/mp3")
+        if "sinav_horen_data" not in st.session_state: st.session_state.sinav_horen_data = None
         
-        st.markdown("### ✅ Doğru / Yanlış Soruları")
-        st.write("Ses kaydını dinlerken aşağıdaki 10 sorunun doğruluğunu işaretle:")
-        
-        for i in range(1, 11):
-            st.radio(
-                f"Soru {i}: Duyduğunuz ifade doğru mu yanlış mı? *(Örnek Soru Metni {i})*", 
-                ["Doğru (Richtig)", "Yanlış (Falsch)"], 
-                key=f"tf_{i}", 
-                index=None, 
-                horizontal=True
-            )
+        if st.button("🎧 Kapsamlı Hören Sınavı Üret", type="primary"):
+            with st.spinner("Dinleme sınavı oluşturuluyor... (Ses dosyası uzun olacağı için bu işlem 30-40 saniye sürebilir)"):
+                sys_prompt = "Sen Goethe Institut standartlarında sınav hazırlayan bir uzmansın."
+                user_prompt = f"""
+                Öğrencinin seviyesi {st.session_state.seviye}.
+                Lütfen bu seviyeye tam uygun, uzun bir dinleme sınavı (Hörverstehen) hazırla.
+                Metin 4 farklı bölüm veya 4 kişinin konuştuğu uzun bir diyalogdan oluşsun. (En az 250 kelime).
+                
+                JSON Formatı KESİNLİKLE şu olmalıdır:
+                {{
+                    "dinleme_metni": "Çok uzun dinleme metni (4 bölüm birleşik)",
+                    "sorular": [
+                        {{"soru": "Metinle ilgili 1. ifade doğru mu yanlış mı?", "dogru_cevap": "Doğru"}},
+                        {{"soru": "Metinle ilgili 2. ifade doğru mu yanlış mı?", "dogru_cevap": "Yanlış"}},
+                        {{"soru": "Metinle ilgili 3. ifade doğru mu yanlış mı?", "dogru_cevap": "Doğru"}},
+                        {{"soru": "Metinle ilgili 4. ifade doğru mu yanlış mı?", "dogru_cevap": "Doğru"}},
+                        {{"soru": "Metinle ilgili 5. ifade doğru mu yanlış mı?", "dogru_cevap": "Yanlış"}},
+                        {{"soru": "Metinle ilgili 6. ifade doğru mu yanlış mı?", "dogru_cevap": "Doğru"}},
+                        {{"soru": "Metinle ilgili 7. ifade doğru mu yanlış mı?", "dogru_cevap": "Doğru"}},
+                        {{"soru": "Metinle ilgili 8. ifade doğru mu yanlış mı?", "dogru_cevap": "Yanlış"}},
+                        {{"soru": "Metinle ilgili 9. ifade doğru mu yanlış mı?", "dogru_cevap": "Doğru"}},
+                        {{"soru": "Metinle ilgili 10. ifade doğru mu yanlış mı?", "dogru_cevap": "Yanlış"}}
+                    ]
+                }}"""
+                
+                data = get_json_from_llm(sys_prompt, user_prompt)
+                if data:
+                    st.session_state.sinav_horen_data = data
+                    st.rerun()
+
+        if st.session_state.sinav_horen_data:
+            hd = st.session_state.sinav_horen_data
             
+            st.markdown("### 🎧 Dinleme Sınavı (4 Bölüm Kombine)")
+            st.info("Aşağıdaki ses dosyasını dinleyerek soruları cevapla. Ses dosyası oldukça uzundur.")
+            
+            try:
+                with st.spinner("Ses sentezleniyor, lütfen bekle..."):
+                    tts = gTTS(text=hd.get("dinleme_metni", ""), lang='de')
+                    sound_fp = io.BytesIO()
+                    tts.write_to_fp(sound_fp)
+                st.audio(sound_fp, format='audio/mp3')
+            except:
+                st.error("Ses motoru bu uzun metni işlerken bir hata ile karşılaştı.")
+            
+            st.markdown("### ✅ Doğru / Yanlış Soruları")
+            st.write("Ses kaydını dinlerken aşağıdaki 10 sorunun doğruluğunu işaretle:")
+            
+            sorular = hd.get("sorular", [])
+            for i, sq in enumerate(sorular):
+                st.radio(
+                    f"Soru {i+1}: {sq.get('soru')}", 
+                    ["Doğru (Richtig)", "Yanlış (Falsch)"], 
+                    key=f"s_tf_{i}", 
+                    index=None, 
+                    horizontal=True
+                )
+                
     st.markdown("---")
     if st.button("📝 Sınavı Bitir ve Teslim Et", type="primary", use_container_width=True):
-        st.success("Sınav kağıdın başarıyla teslim edildi! (Dosya verileri girildiğinde otomatik puanlama sistemi devreye girecektir.)")
+        st.success("Sınav kağıdın başarıyla teslim edildi! (Bu simülasyondur, asıl sınavlarında başarılar dilerim!)")
 
 conn.close()
