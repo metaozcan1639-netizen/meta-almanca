@@ -440,7 +440,7 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
         secilen_konu = st.text_input("Lütfen işlemek istediğin gramer konusunu yaz:")
 
     if st.button("📖 Dersi Başlat", type="primary", use_container_width=True) and secilen_konu:
-        with st.spinner("Alman profesör müfredatı, tabloları ve sesleri hazırlıyor..."):
+        with st.spinner("Alman profesör müfredatı, tabloları ve sesleri hazırlıyor... (Bu işlem 10-15 saniye sürebilir)"):
             sys_prompt = "Sen Almanya'nın en efsanevi, samimi profesörüsün. Öğrenciyle 'sen' diyerek konuşur, hikayeleştirirsin."
             user_prompt = f"""
             Öğrenci {st.session_state.seviye} seviyesinde. Seçilen Konu: {secilen_konu}.
@@ -504,7 +504,11 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
             st.markdown("### 📝 Sesli Örnek Cümleler")
             
             for orn in sayfa_data.get('ornekler', []):
-                st.markdown(f"<div style='font-size:18px; color:#60a5fa; font-weight:bold; margin-top:15px;'>🇩🇪 {orn['de']}</div>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <div style='background: rgba(0,0,0,0.4); padding: 15px; border-left: 4px solid #60a5fa; border-radius: 6px; margin-bottom: 12px;'>
+                    <div style='font-size:18px; color:#f8fafc; margin-bottom:4px; font-weight:bold;'>{orn['de']}</div>
+                </div>
+                """, unsafe_allow_html=True)
                 
                 try:
                     tts = gTTS(text=orn['de'], lang='de')
@@ -514,7 +518,7 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
                 except: 
                     pass
                     
-                with st.expander("🇹🇷 Türkçesini Gör (Gizli)"): 
+                with st.expander("Türkçesini Gör (Gizli)"): 
                     st.write(orn['tr'])
                     
                 st.markdown("---")
@@ -601,14 +605,14 @@ elif sayfa == "📖 Lesen (Okuma ve Çıkarım)":
         </div>
         """, unsafe_allow_html=True)
         
-        with st.expander("🇹🇷 Metnin Çevirisini Gör (Tavsiye Edilmez)"): 
+        with st.expander("Metnin Çevirisini Gör (Tavsiye Edilmez)"): 
             st.write(d["ceviri"])
             
         st.markdown(f"""
         <div style="margin-top: 25px; padding-left: 15px; border-left: 4px solid #fbbf24;">
             <h4 style="color:#fbbf24; margin-bottom:5px;">Frage (Soru):</h4>
-            <p style="font-size: 19px; font-weight:bold; margin-bottom:0;">🇩🇪 {d["soru"]}</p>
-            <p style="font-size: 15px; color:#94a3b8; margin-top:5px;">🇹🇷 {d.get("soru_turkce", "")}</p>
+            <p style="font-size: 19px; font-weight:bold; margin-bottom:0;">{d["soru"]}</p>
+            <p style="font-size: 15px; color:#94a3b8; margin-top:5px;">{d.get("soru_turkce", "")}</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -740,8 +744,8 @@ elif sayfa == "🎧 Hören (Dinleme Testi)":
             st.info(f"**Açıklama:** {d.get('aciklama')}")
             
             with st.expander("📖 Dinlediğin Metni ve Çevirisini Gör"):
-                st.markdown(f"**🇩🇪 Almanca:** {d.get('dinleme_metni')}")
-                st.markdown(f"**🇹🇷 Türkçe:** {d.get('turkce_ceviri')}")
+                st.markdown(f"**Almanca:** {d.get('dinleme_metni')}")
+                st.markdown(f"**Türkçe:** {d.get('turkce_ceviri')}")
             
             if st.button("🔄 Yeni Sınav"):
                 st.session_state.horen_data = None
@@ -793,7 +797,18 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
             if st.button("👩‍🏫 Teslim Et", type="primary"):
                 if cevap.strip():
                     with st.spinner("İnceleniyor..."):
-                        sonuc = get_json_from_llm("Eleştirel profesör.", f"Görev: {d.get('durum')} | Metin: {cevap}\nJSON: {{\"puan\": 0-100, \"detayli_analiz\": \"Türkçe analiz\", \"muttersprachler_versiyon\": \"Anadil seviyesi\"}}")
+                        sys_prompt = "Sen eleştirel bir Alman dil bilgisi profesörüsün."
+                        user_prompt = f"""
+                        Görev: {d.get('durum')}
+                        Metin: "{cevap}"
+                        JSON Formatı:
+                        {{
+                            "puan": 0-100 (Sentaks, gramere göre),
+                            "detayli_analiz": "Metindeki yapısal hataların detaylı TÜRKÇE analizi.",
+                            "muttersprachler_versiyon": "Metnin tam olarak Alman bir anadil konuşurunun yazacağı akıcı hali."
+                        }}"""
+                        
+                        sonuc = get_json_from_llm(sys_prompt, user_prompt)
                         if sonuc:
                             st.session_state.schreiben_cevap_verildi = True
                             st.session_state.schreiben_sonuc = sonuc
@@ -828,7 +843,7 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
                 st.rerun()
 
 # ------------------------------------------
-# Sprechen (Konuşma Pratiği)
+# Sprechen (Konuşma Pratiği) - MIC ERROR FIX
 # ------------------------------------------
 elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
     st.markdown(f'<div class="module-header">🗣️ Sprechen ({st.session_state.seviye})</div>', unsafe_allow_html=True)
@@ -854,7 +869,7 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
                 <div style="display: flex; justify-content: flex-start; margin-bottom: 15px;">
                     <div style="background-color: #1e293b; color: #f8fafc; padding: 15px; border-radius: 18px 18px 18px 4px; max-width: 85%; border: 1px solid #334155;">
                         <div style="font-size: 16px; font-weight: 500;">{msg["de"]}</div>
-                        <div style="font-size: 13px; color: #94a3b8; margin-top: 5px;">🇹🇷 {msg["tr"]}</div>
+                        <div style="font-size: 13px; color: #94a3b8; margin-top: 5px;">{msg["tr"]}</div>
                         {c_html}
                     </div>
                 </div>
@@ -866,17 +881,22 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
     if audio_bytes and client:
         with st.spinner("🎙️ İşleniyor..."):
             try:
+                # getvalue() kullanılarak raw byte formatı garantilendi. (Mikrofon hatası kökten çözümü)
+                audio_content = audio_bytes.getvalue()
+                
                 transcription = client.audio.transcriptions.create(
-                    file=("audio.wav", audio_bytes.read()), 
+                    file=("audio.wav", audio_content), 
                     model="whisper-large-v3", 
                     response_format="json"
                 )
-                st.session_state.sp_history.append({"role": "user", "content": transcription.text})
+                
+                user_text = transcription.text
+                st.session_state.sp_history.append({"role": "user", "content": user_text})
                 
                 with st.spinner("🧠 Yanıt hazırlanıyor..."):
                     sys_prompt = "Sen arkadaş canlısı bir Alman dil partnerisin. Doğal bir sohbetteymiş gibi kısa ve akıcı cevaplar ver."
                     context = "".join([f"\n{m['role']}: {m.get('de', m.get('content'))}" for m in st.session_state.sp_history[-4:]])
-                    user_prompt = f"Geçmiş: {context}\nJSON Formatı: {{\"de\": \"Almanca cevabın (KISA)\", \"tr\": \"Türkçe çevirisi\", \"correction\": \"Hata varsa düzelt, yoksa boş bırak\"}}"
+                    user_prompt = f"Geçmiş: {context}\nÖğrenci: {user_text}\nJSON Formatı: {{\"de\": \"Almanca cevabın (KISA)\", \"tr\": \"Türkçe çevirisi\", \"correction\": \"Öğrencinin son cümlesinde hata varsa düzelt, yoksa boş bırak\"}}"
                     
                     hoca_data = get_json_from_llm(sys_prompt, user_prompt)
                     if hoca_data:
@@ -890,8 +910,8 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
                         conn.commit()
                         st.session_state.xp += 20
                         st.rerun()
-            except: 
-                st.error("Mikrofon hatası.")
+            except Exception as e: 
+                st.error(f"Ses işleme sistemi hatası: {str(e)}")
 
 # ------------------------------------------
 # SRS KARTLARI
@@ -941,8 +961,8 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     ornek_html = f"""
                     <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; width: 100%; border-left: 4px solid #60a5fa; text-align: left; margin-top:20px;">
                         <span style="color:#60a5fa; font-size:12px; text-transform:uppercase; font-weight:bold;">Örnek Cümle:</span><br>
-                        <div style="font-size: 18px; color: #f8fafc; font-style: italic; margin-bottom: 5px;">🇩🇪 "{ornek_de}"</div>
-                        <div style="font-size: 15px; color: #94a3b8;">🇹🇷 {ornek_tr}</div>
+                        <div style="font-size: 18px; color: #f8fafc; font-style: italic; margin-bottom: 5px;">"{ornek_de}"</div>
+                        <div style="font-size: 15px; color: #94a3b8;">{ornek_tr}</div>
                     </div>
                     """
                 
@@ -1230,7 +1250,6 @@ elif sayfa == "📝 Sınav Merkezi (Prüfung)":
                 toplam_soru += 1
                 cevap_secimi = st.session_state.get(f"s_tf_{i}")
                 if cevap_secimi:
-                    # "Doğru (Richtig)" kelimesinin sadece ilk kelimesini al "Doğru"
                     temiz_cevap = cevap_secimi.split(" ")[0]
                     if temiz_cevap == sq.get("dogru_cevap"):
                         dogru_cevap += 1
@@ -1247,7 +1266,6 @@ elif sayfa == "📝 Sınav Merkezi (Prüfung)":
                 st.success(f"🎉 **TEBRİKLER! Goethe Zertifikat simülasyonunu başarıyla geçtin!** \n\n✅ **Doğru Sayısı:** {dogru_cevap}/{toplam_soru} \n🏆 **Başarı Oranı:** %{basari_yuzdesi}")
                 st.balloons()
                 
-                # Sınav geçme ödülü (Sadece bir kere tetiklenmesi için küçük bir hile kullanılabilir ama şimdilik direkt veriyoruz)
                 c.execute("UPDATE stats SET total_xp = total_xp + 150 WHERE user_id=1")
                 conn.commit()
                 st.session_state.xp += 150
