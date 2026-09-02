@@ -449,7 +449,6 @@ if sayfa == "📊 Akademi Paneli":
     if st.session_state.gunun_konusu: 
         st.info(f"📌 **Günün Aktif Konusu:** {st.session_state.gunun_konusu} (Sınavlar ve bültenler bu konuya göre üretilecek)")
 
-    # Oyunlaştırma Rozetleri
     st.markdown("### 🏆 Başarı Rozetleri")
     badges_html = ""
     if current_streak >= 3:
@@ -468,7 +467,6 @@ if sayfa == "📊 Akademi Paneli":
 
     st.markdown("---")
 
-    # Zayıf Nokta Radarı
     st.markdown("### 📡 Zayıf Nokta Radarı")
     st.markdown("Aşağıda yapay zekanın senin hatalarından analiz ettiği eksik gramer konuları yer alıyor:")
     
@@ -486,7 +484,6 @@ if sayfa == "📊 Akademi Paneli":
     else:
         st.success("Harika! Sistem henüz tekrarlayan bir gramer zayıf noktası tespit etmedi.")
 
-    # Haftalık / Aylık İlerleme Grafiği Tablosu (Performans Logları)
     st.markdown("### 📈 Son Performans Geçmişi")
     c.execute("SELECT module_name, score, date FROM performance_logs ORDER BY date DESC LIMIT 5")
     logs = c.fetchall()
@@ -497,7 +494,7 @@ if sayfa == "📊 Akademi Paneli":
         st.info("Henüz kaydedilmiş bir performans geçmişi yok.")
 
 # ------------------------------------------
-# KAPSAMLI EĞİTİM MODÜLÜ (BOL ÖRNEKLİ)
+# KAPSAMLI EĞİTİM MODÜLÜ (TÜRKÇE ANLATIM)
 # ------------------------------------------
 elif sayfa == "📚 Lektionen (Kur Eğitimi)":
     st.markdown(f'<div class="module-header">📚 Kur Eğitimi: {st.session_state.seviye}</div>', unsafe_allow_html=True)
@@ -527,12 +524,12 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
         secilen_konu = st.text_input("Lütfen işlemek istediğin gramer konusunu yaz:")
 
     if st.button("📖 Dersi Başlat", type="primary", use_container_width=True) and secilen_konu:
-        with st.spinner("Alman profesör konuyu senin için detaylandırıyor ve bolca örnek hazırlıyor..."):
+        with st.spinner("Alman profesör konuyu senin için Türkçe olarak detaylandırıyor..."):
             sys_prompt = "Sen Almanya'nın en efsanevi, samimi profesörüsün. Öğrenciyle 'sen' diyerek konuşur, hikayeleştirirsin."
             user_prompt = f"""
             Öğrenci {st.session_state.seviye} seviyesinde. Seçilen Konu: {secilen_konu}.
             Dersi 2 sayfaya böl. Formülleri Markdown tablosu olarak ver.
-            ÖNEMLİ: Anlatım kısmı ASLA kısa ve robotik olmamalıdır! En az 100 kelimelik, detaylı, akıcı, esprili ve günlük hayattan analojiler barındıran bir öğretmen konuşması olmalıdır.
+            ÖNEMLİ: Anlatım kısmı KESİNLİKLE TÜRKÇE olmalıdır! Öğrenciye konuyu, mantığını ve kuralları samimi bir Türkçe ile detaylıca anlat. Okunabilirliği artırmak için HTML `<p>` etiketleri kullanarak en az 3-4 ayrı paragraf halinde yaz. Örnek cümleler ise Almanca olsun.
             
             JSON Formatı KESİNLİKLE şu yapıda olmalıdır: 
             {{
@@ -540,7 +537,7 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
                 "sayfalar": [
                     {{
                         "baslik": "Sayfa 1", 
-                        "anlatim": "Buraya konuyu derinlemesine, akıcı ve uzun uzun anlattığın metni yaz.", 
+                        "anlatim": "<p>1. paragraf Türkçe açıklama...</p><p>2. paragraf Türkçe açıklama...</p><p>3. paragraf Türkçe açıklama...</p>", 
                         "tablo": "Markdown tablo (yoksa boş bırak)", 
                         "ornekler": [
                             {{"de": "Almanca örnek 1", "tr": "Türkçe çeviri 1"}},
@@ -552,7 +549,7 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
                     }}, 
                     {{
                         "baslik": "Sayfa 2", 
-                        "anlatim": "Buraya konunun devamını veya istisnalarını detaylıca anlat.", 
+                        "anlatim": "<p>1. paragraf Türkçe devam açıklaması...</p><p>2. paragraf Türkçe açıklama...</p><p>3. paragraf Türkçe açıklama...</p>", 
                         "tablo": "Tablo (yoksa boş bırak)", 
                         "ornekler": [
                             {{"de": "Almanca örnek 6", "tr": "Türkçe çeviri 6"}},
@@ -592,9 +589,9 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
                 <h2 style="color: #a855f7; margin-top:0; border-bottom: 2px solid rgba(168,85,247,0.3); padding-bottom:10px;">
                     {sayfa_data.get('baslik')}
                 </h2>
-                <p style="font-size: 18px; line-height: 1.8; color: #f8fafc; margin-bottom: 20px;">
+                <div style="font-size: 18px; line-height: 1.8; color: #f8fafc; margin-bottom: 20px;">
                     {sayfa_data.get('anlatim')}
-                </p>
+                </div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -728,7 +725,7 @@ elif sayfa == "📰 Tagesbericht (Kişisel Bülten)":
             st.markdown(f"**{kelime.get('de')}** - {kelime.get('tr')}")
 
 # ------------------------------------------
-# İNTERAKTİF KELİME QUİZLERİ (YENİ EKLENTİ)
+# İNTERAKTİF KELİME QUİZLERİ
 # ------------------------------------------
 elif sayfa == "🎯 İnteraktif Kelime Quizleri":
     st.markdown(f'<div class="module-header">🎯 Kelime Düellosu & Quiz</div>', unsafe_allow_html=True)
@@ -749,7 +746,6 @@ elif sayfa == "🎯 İnteraktif Kelime Quizleri":
             st.markdown(f"### Soru {idx+1} / {len(quiz_kelimeler)}")
             st.markdown(f"**Türkçe Anlamı:** `{dogru_kelime[1]}` olan Almanca kelime hangisidir?")
             
-            # Yanıltıcı şıklar üretmek için diğer kelimelerden seçelim
             c.execute("SELECT almanca FROM vocabulary WHERE almanca != ? ORDER BY RANDOM() LIMIT 3", (dogru_kelime[0],))
             yanlislar = [r[0] for r in c.fetchall()]
             secenekler = yanlislar + [dogru_kelime[0]]
@@ -780,7 +776,7 @@ elif sayfa == "🎯 İnteraktif Kelime Quizleri":
                 st.rerun()
 
 # ------------------------------------------
-# CÜMLE / METİN DÜZELTME STÜDYOSU (YENİ EKLENTİ)
+# CÜMLE / METİN DÜZELTME STÜDYOSU
 # ------------------------------------------
 elif sayfa == "🛠️ Cümle / Metin Düzeltme Stüdyosu":
     st.markdown(f'<div class="module-header">🛠️ Metin Düzeltme Stüdyosu</div>', unsafe_allow_html=True)
@@ -1039,7 +1035,6 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
                 "durum": "Türkçe açıklama.", 
                 "kullanilmasi_istenen_yapilar": "Zorunlu gramer kuralı."
             }}"""
-            
             data = get_json_from_llm(sys_prompt, user_prompt)
             if data: 
                 st.session_state.schreiben_gorev_data = data
