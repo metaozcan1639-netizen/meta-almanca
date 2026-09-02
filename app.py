@@ -206,7 +206,7 @@ CEFR_RULES = {
 }
 
 # ==========================================
-# 2. VERİTABANI MİMARİSİ (HATA RADARI EKLENDİ)
+# 2. VERİTABANI MİMARİSİ
 # ==========================================
 def init_db():
     conn = sqlite3.connect('akademie_master_pro.db', check_same_thread=False)
@@ -250,7 +250,6 @@ def init_db():
         date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     
-    # Hata analizi tablosu (Zayıf Nokta Radarı için)
     c.execute('''CREATE TABLE IF NOT EXISTS mistakes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
@@ -419,6 +418,8 @@ sayfa = st.sidebar.radio("📚 ÖĞRENME MODÜLLERİ", [
     "🧠 Akıllı Hafıza (SRS Kartları)",
     "➕ Sözlük & Kelime Ekle",
     "📰 Tagesbericht (Kişisel Bülten)",
+    "🎯 İnteraktif Kelime Quizleri",
+    "🛠️ Cümle / Metin Düzeltme Stüdyosu",
     "📝 Sınav Merkezi (Prüfung)"
 ])
 
@@ -430,7 +431,6 @@ if sayfa == "📊 Akademi Paneli":
     st.markdown('<div class="module-header">Genel Bakış ve Radarlar</div>', unsafe_allow_html=True)
     st.markdown('<div class="module-subtitle">Oyunlaştırılmış profilin, başarı rozetlerin ve zayıf nokta analizin.</div>', unsafe_allow_html=True)
     
-    # İstatistikler
     c.execute("SELECT COUNT(*) FROM vocabulary WHERE next_review <= ?", (bugun,))
     bekleyen_kelime = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM vocabulary")
@@ -449,7 +449,7 @@ if sayfa == "📊 Akademi Paneli":
     if st.session_state.gunun_konusu: 
         st.info(f"📌 **Günün Aktif Konusu:** {st.session_state.gunun_konusu} (Sınavlar ve bültenler bu konuya göre üretilecek)")
 
-    # Oyunlaştırma (Gamification) Rozetleri
+    # Oyunlaştırma Rozetleri
     st.markdown("### 🏆 Başarı Rozetleri")
     badges_html = ""
     if current_streak >= 3:
@@ -468,7 +468,7 @@ if sayfa == "📊 Akademi Paneli":
 
     st.markdown("---")
 
-    # Zayıf Nokta Radarı (Fehleranalyse)
+    # Zayıf Nokta Radarı
     st.markdown("### 📡 Zayıf Nokta Radarı")
     st.markdown("Aşağıda yapay zekanın senin hatalarından analiz ettiği eksik gramer konuları yer alıyor:")
     
@@ -486,8 +486,18 @@ if sayfa == "📊 Akademi Paneli":
     else:
         st.success("Harika! Sistem henüz tekrarlayan bir gramer zayıf noktası tespit etmedi.")
 
+    # Haftalık / Aylık İlerleme Grafiği Tablosu (Performans Logları)
+    st.markdown("### 📈 Son Performans Geçmişi")
+    c.execute("SELECT module_name, score, date FROM performance_logs ORDER BY date DESC LIMIT 5")
+    logs = c.fetchall()
+    if logs:
+        for m_name, m_score, m_date in logs:
+            st.markdown(f"<div style='display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #334155;'><span style='color:#94a3b8;'>{m_date} - {m_name}</span><span style='color:#34d399; font-weight:bold;'>{m_score} Puan</span></div>", unsafe_allow_html=True)
+    else:
+        st.info("Henüz kaydedilmiş bir performans geçmişi yok.")
+
 # ------------------------------------------
-# SAYFALI VE BOL ÖRNEKLİ EĞİTİM MODÜLÜ (LEKTIONEN)
+# KAPSAMLI EĞİTİM MODÜLÜ (BOL ÖRNEKLİ)
 # ------------------------------------------
 elif sayfa == "📚 Lektionen (Kur Eğitimi)":
     st.markdown(f'<div class="module-header">📚 Kur Eğitimi: {st.session_state.seviye}</div>', unsafe_allow_html=True)
@@ -591,7 +601,7 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
             if sayfa_data.get("tablo"): 
                 st.markdown(sayfa_data.get("tablo"))
             
-            st.markdown("### 📝 Sesli Örnek Cümleler")
+            st.markdown("### 📝 Sesli Örnek Cümleler (Bol Örnek Arşivi)")
             
             for orn in sayfa_data.get('ornekler', []):
                 st.markdown(f"""
@@ -648,7 +658,7 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
                         st.success(f"Tebrikler! Dersi tamamladın, +50 XP kazandın ve {eklenen} kelime Sözlüğe eklendi!")
 
 # ------------------------------------------
-# YENİ MODÜL: TAGESBERICHT (KİŞİSEL BÜLTEN)
+# TAGESBERICHT (KİŞİSEL BÜLTEN)
 # ------------------------------------------
 elif sayfa == "📰 Tagesbericht (Kişisel Bülten)":
     st.markdown(f'<div class="module-header">📰 Tagesbericht ({st.session_state.seviye})</div>', unsafe_allow_html=True)
@@ -657,7 +667,6 @@ elif sayfa == "📰 Tagesbericht (Kişisel Bülten)":
     if "bulten_data" not in st.session_state: 
         st.session_state.bulten_data = None
 
-    # Kullanıcının seçebileceği zengin, ilgi alanına yönelik kategoriler
     ilgi_alanlari = [
         "Rastgele / Genel",
         "Otomotiv Mühendisliği ve Araç Mekaniği",
@@ -717,6 +726,94 @@ elif sayfa == "📰 Tagesbericht (Kişisel Bülten)":
         st.markdown("### 🔑 Metinden Önemli Kelimeler")
         for kelime in d.get("onemli_kelimeler", []):
             st.markdown(f"**{kelime.get('de')}** - {kelime.get('tr')}")
+
+# ------------------------------------------
+# İNTERAKTİF KELİME QUİZLERİ (YENİ EKLENTİ)
+# ------------------------------------------
+elif sayfa == "🎯 İnteraktif Kelime Quizleri":
+    st.markdown(f'<div class="module-header">🎯 Kelime Düellosu & Quiz</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Sözlüğündeki kelimelerle kendini test et, pratik yap.</div>', unsafe_allow_html=True)
+    
+    c.execute("SELECT almanca, turkce FROM vocabulary ORDER BY RANDOM() LIMIT 5")
+    quiz_kelimeler = c.fetchall()
+    
+    if not quiz_kelimeler:
+        st.warning("Sözlüğünde yeterli kelime yok. Lütfen Lektionen modülünden ders tamamla veya Sözlük sekmesinden kelime ekle.")
+    else:
+        if "quiz_index" not in st.session_state: st.session_state.quiz_index = 0
+        if "quiz_score" not in st.session_state: st.session_state.quiz_score = 0
+        
+        idx = st.session_state.quiz_index
+        if idx < len(quiz_kelimeler):
+            dogru_kelime = quiz_kelimeler[idx]
+            st.markdown(f"### Soru {idx+1} / {len(quiz_kelimeler)}")
+            st.markdown(f"**Türkçe Anlamı:** `{dogru_kelime[1]}` olan Almanca kelime hangisidir?")
+            
+            # Yanıltıcı şıklar üretmek için diğer kelimelerden seçelim
+            c.execute("SELECT almanca FROM vocabulary WHERE almanca != ? ORDER BY RANDOM() LIMIT 3", (dogru_kelime[0],))
+            yanlislar = [r[0] for r in c.fetchall()]
+            secenekler = yanlislar + [dogru_kelime[0]]
+            import random
+            random.shuffle(secenekler)
+            
+            secim = st.radio("Şıklar:", secenekler, key=f"q_radio_{idx}", index=None)
+            
+            if st.button("Cevabı Kontrol Et", type="primary"):
+                if secim == dogru_kelime[0]:
+                    st.success("🎉 Doğru!")
+                    st.session_state.quiz_score += 20
+                else:
+                    st.error(f"❌ Yanlış! Doğru cevap: **{dogru_kelime[0]}** olmalıydı.")
+                st.session_state.quiz_index += 1
+                st.rerun()
+        else:
+            st.markdown(f"""
+            <div style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; border-radius: 15px; padding: 30px; text-align: center;">
+                <h2>🏆 Quiz Tamamlandı!</h2>
+                <p style="font-size: 20px;">Toplam Puanın: <b>{st.session_state.quiz_score} / 100</b></p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("🔄 Quizi Yeniden Başlat"):
+                st.session_state.quiz_index = 0
+                st.session_state.quiz_score = 0
+                st.rerun()
+
+# ------------------------------------------
+# CÜMLE / METİN DÜZELTME STÜDYOSU (YENİ EKLENTİ)
+# ------------------------------------------
+elif sayfa == "🛠️ Cümle / Metin Düzeltme Stüdyosu":
+    st.markdown(f'<div class="module-header">🛠️ Metin Düzeltme Stüdyosu</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Herhangi bir Almanca metni yapıştır, anında profesyonel Alman düzeltisi ve önerileri al.</div>', unsafe_allow_html=True)
+    
+    user_text = st.text_area("İnceletmek istediğin Almanca metni veya cümleyi buraya yapıştır:", height=150)
+    
+    if st.button("🔍 Metni Profesyonelce Analiz Et", type="primary"):
+        if user_text.strip():
+            with st.spinner("Alman dilbilimci metnini inceliyor..."):
+                sys_prompt = "Sen kıdemli bir Alman editör ve dilbilimsin."
+                user_prompt = f"""
+                Öğrencinin yazdığı metin: "{user_text}"
+                Bu metni incele. 
+                JSON Formatı:
+                {{
+                    "duzeltilmis_hali": "Metnin %100 kusursuz ve doğal Almanca hali",
+                    "hatalar_ve_aciklamalar": "Yapılan hataların Türkçe açıklamaları",
+                    "gelismis_oneriler": "B2/C1 seviyesinde daha akademik veya şık alternatif kelime/kalıp önerileri"
+                }}"""
+                
+                res = get_json_from_llm(sys_prompt, user_prompt)
+                if res:
+                    st.markdown("### ✨ Kusursuz Versiyon")
+                    st.info(res.get("duzeltilmis_hali"))
+                    
+                    st.markdown("### 🔍 Hata Analizi")
+                    st.write(res.get("hatalar_ve_aciklamalar"))
+                    
+                    st.markdown("### 💡 İleri Düzey (B2/C1) Öneriler")
+                    st.success(res.get("gelismis_oneriler"))
+        else:
+            st.warning("Lütfen analiz için bir metin girin.")
 
 # ------------------------------------------
 # Lesen (Okuma)
@@ -796,7 +893,7 @@ elif sayfa == "📖 Lesen (Okuma ve Çıkarım)":
                             "puan": 0-100 (Sayı), 
                             "hata_analizi": "Türkçe hata analizi", 
                             "dogru_versiyon": "Kusursuz Almanca hali",
-                            "ana_hata_konusu": "Eğer hata yapıldıysa bu hatanın ana gramer başlığı (Örn: Dativ, Artikel, Kelime Dağarcığı). Yoksa null"
+                            "ana_hata_konusu": "Eğer hata yapıldıysa bu hatanın ana gramer başlığı. Yoksa null"
                         }}"""
                         
                         sonuc = get_json_from_llm(sys_prompt, user_prompt)
@@ -804,7 +901,6 @@ elif sayfa == "📖 Lesen (Okuma ve Çıkarım)":
                             st.session_state.lesen_cevap_verildi = True
                             st.session_state.lesen_sonuc = sonuc
                             
-                            # Hata yapıldıysa radara kaydet
                             hata_konusu = sonuc.get("ana_hata_konusu")
                             if hata_konusu and sonuc.get("puan", 100) < 80:
                                 log_mistake(hata_konusu)
@@ -943,6 +1039,7 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
                 "durum": "Türkçe açıklama.", 
                 "kullanilmasi_istenen_yapilar": "Zorunlu gramer kuralı."
             }}"""
+            
             data = get_json_from_llm(sys_prompt, user_prompt)
             if data: 
                 st.session_state.schreiben_gorev_data = data
@@ -975,7 +1072,7 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
                             "puan": 0-100 (Sentaks, gramere göre),
                             "detayli_analiz": "Metindeki yapısal hataların detaylı TÜRKÇE analizi.",
                             "muttersprachler_versiyon": "Metnin tam olarak Alman bir anadil konuşurunun yazacağı akıcı hali.",
-                            "ana_hata_konusu": "Eğer hata yapıldıysa gramer başlığı (Örn: Çekimleme, Sözcük Dizilimi). Yoksa null"
+                            "ana_hata_konusu": "Eğer hata yapıldıysa gramer başlığı. Yoksa null"
                         }}"""
                         
                         sonuc = get_json_from_llm(sys_prompt, user_prompt)
@@ -1018,7 +1115,7 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
                 st.rerun()
 
 # ------------------------------------------
-# Sprechen (Konuşma Pratiği & Roleplay)
+# SPRECHEN (ROLEPLAY & PRATİK)
 # ------------------------------------------
 elif sayfa == "🗣️ Sprechen (Roleplay & Pratik)":
     st.markdown(f'<div class="module-header">🗣️ Sprechen ({st.session_state.seviye})</div>', unsafe_allow_html=True)
@@ -1039,7 +1136,6 @@ elif sayfa == "🗣️ Sprechen (Roleplay & Pratik)":
         
     if "aktif_senaryo" not in st.session_state or st.session_state.aktif_senaryo != secilen_senaryo:
         st.session_state.aktif_senaryo = secilen_senaryo
-        # Senaryo değişirse geçmişi sıfırla
         st.session_state.sp_history = []
         
     if len(st.session_state.sp_history) == 0:
@@ -1255,7 +1351,7 @@ elif sayfa == "➕ Sözlük & Kelime Ekle":
             st.info("Sözlüğünde henüz kelime yok.")
 
 # ------------------------------------------
-# SINAV MERKEZİ (PRÜFUNG) AI DESTEKLİ & PUANLAMALI
+# SINAV MERKEZİ (PRÜFUNG)
 # ------------------------------------------
 elif sayfa == "📝 Sınav Merkezi (Prüfung)":
     st.markdown('<div class="module-header">📝 Zertifikat Simülasyonu</div>', unsafe_allow_html=True)
@@ -1263,13 +1359,12 @@ elif sayfa == "📝 Sınav Merkezi (Prüfung)":
     
     tab1, tab2 = st.tabs(["📖 Lesen (Okuma Sınavı)", "🎧 Hören (Dinleme Sınavı)"])
     
-    # === TAB 1: LESEN SINAVI ===
     with tab1:
         if "sinav_lesen_data" not in st.session_state: 
             st.session_state.sinav_lesen_data = None
         
         if st.button("🤖 Kapsamlı Lesen Sınavı Üret (Tüm Bölümler)", type="primary"):
-            with st.spinner("Sınav kağıdın Goethe standartlarında hazırlanıyor... Lütfen bekle."):
+            with st.spinner("Sınav kağıdın Goethe standartlarında hazırlanıyor..."):
                 sys_prompt = "Sen Goethe Institut standartlarında sınav hazırlayan bir uzmansın."
                 user_prompt = f"""
                 Öğrencinin seviyesi {st.session_state.seviye}.
@@ -1348,13 +1443,12 @@ elif sayfa == "📝 Sınav Merkezi (Prüfung)":
             with col_kt1: st.text_input("1. Kelimenin tamamı:", key="s_kt1")
             with col_kt2: st.text_input("2. Kelimenin tamamı:", key="s_kt2")
 
-    # === TAB 2: HÖREN SINAVI ===
     with tab2:
         if "sinav_horen_data" not in st.session_state: 
             st.session_state.sinav_horen_data = None
         
         if st.button("🎧 Kapsamlı Hören Sınavı Üret", type="primary"):
-            with st.spinner("Dinleme sınavı oluşturuluyor... (Ses dosyası uzun olacağı için bu işlem 30-40 saniye sürebilir)"):
+            with st.spinner("Dinleme sınavı oluşturuluyor..."):
                 sys_prompt = "Sen Goethe Institut standartlarında sınav hazırlayan bir uzmansın."
                 user_prompt = f"""
                 Öğrencinin seviyesi {st.session_state.seviye}.
@@ -1413,42 +1507,35 @@ elif sayfa == "📝 Sınav Merkezi (Prüfung)":
                 
     st.markdown("---")
     
-    # === PUANLAMA VE SONUÇ SİSTEMİ ===
     if st.button("📝 Sınavı Bitir, Puanla ve Teslim Et", type="primary", use_container_width=True):
         toplam_soru = 0
         dogru_cevap = 0
         
-        # Lesen Puanlama
         if st.session_state.sinav_lesen_data:
             ld = st.session_state.sinav_lesen_data
             
-            # Okuma
             for i, sq in enumerate(ld.get("okuma_sorulari", [])):
                 toplam_soru += 1
                 if st.session_state.get(f"sr_{i}") == sq.get("dogru"):
                     dogru_cevap += 1
                     
-            # Eşleştirme
             for i, p in enumerate(ld.get("eslestirme", {}).get("paragraflar", [])):
                 toplam_soru += 1
                 if st.session_state.get(f"sb_{i}") == p.get("dogru_baslik"):
                     dogru_cevap += 1
             
-            # Boşluk Doldurma
             bd_cevaplar = ld.get("bosluk_doldurma", {}).get("dogru_cevaplar", [])
             if len(bd_cevaplar) >= 2:
                 toplam_soru += 2
                 if st.session_state.get("s_bd1", "").strip().lower() == bd_cevaplar[0].lower(): dogru_cevap += 1
                 if st.session_state.get("s_bd2", "").strip().lower() == bd_cevaplar[1].lower(): dogru_cevap += 1
                 
-            # Kelime Tamamlama
             kt_cevaplar = ld.get("kelime_tamamlama", {}).get("dogru_cevaplar", [])
             if len(kt_cevaplar) >= 2:
                 toplam_soru += 2
                 if st.session_state.get("s_kt1", "").strip().lower() == kt_cevaplar[0].lower(): dogru_cevap += 1
                 if st.session_state.get("s_kt2", "").strip().lower() == kt_cevaplar[1].lower(): dogru_cevap += 1
 
-        # Hören Puanlama
         if st.session_state.sinav_horen_data:
             hd = st.session_state.sinav_horen_data
             for i, sq in enumerate(hd.get("sorular", [])):
@@ -1459,7 +1546,6 @@ elif sayfa == "📝 Sınav Merkezi (Prüfung)":
                     if temiz_cevap == sq.get("dogru_cevap"):
                         dogru_cevap += 1
 
-        # Sonuç Gösterimi
         if toplam_soru == 0:
             st.warning("Puan hesaplanamadı. Lütfen önce yukarıdaki butonlardan sınav üretin ve soruları yanıtlayın.")
         else:
