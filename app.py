@@ -411,15 +411,18 @@ st.sidebar.markdown("---")
 sayfa = st.sidebar.radio("📚 ÖĞRENME MODÜLLERİ", [
     "📊 Akademi Paneli", 
     "📚 Lektionen (Kur Eğitimi)", 
+    "📰 Tagesbericht (Kişisel Bülten)", 
     "📖 Lesen (Okuma ve Çıkarım)", 
     "🎧 Hören (Dinleme Testi)", 
     "✍️ Schreiben (Yapısal Üretim)", 
     "🗣️ Sprechen (Roleplay & Pratik)", 
     "🧠 Akıllı Hafıza (SRS Kartları)",
     "➕ Sözlük & Kelime Ekle",
-    "📰 Tagesbericht (Kişisel Bülten)",
     "🎯 İnteraktif Kelime Quizleri",
     "🛠️ Cümle / Metin Düzeltme Stüdyosu",
+    "🎧 Diktat-Trainer (Sesli Diktat)",
+    "💬 Redewendungen (Deyimler Köşesi)",
+    "🎙️ Phonetik-Trainer (Telaffuz Analizi)",
     "📝 Sınav Merkezi (Prüfung)"
 ])
 
@@ -810,6 +813,123 @@ elif sayfa == "🛠️ Cümle / Metin Düzeltme Stüdyosu":
                     st.success(res.get("gelismis_oneriler"))
         else:
             st.warning("Lütfen analiz için bir metin girin.")
+
+# ------------------------------------------
+# YENİ EKLENTİ 1: DİKTAT-TRAINER (SESLİ DİKTAT)
+# ------------------------------------------
+elif sayfa == "🎧 Diktat-Trainer (Sesli Diktat)":
+    st.markdown(f'<div class="module-header">🎧 Diktat-Trainer</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Dinlediğin cümleyi doğru imla, büyük-küçük harf ve artikellerle yazarak kulak-el koordinasyonunu geliştir.</div>', unsafe_allow_html=True)
+    
+    if "diktat_data" not in st.session_state:
+        st.session_state.diktat_data = None
+        
+    if st.button("🎯 Yeni Diktat Cümlesi Üret", type="primary"):
+        with st.spinner("Seviyene uygun diktat cümlesi hazırlanıyor..."):
+            sys_prompt = "Sen bir Almanca sınav denetmenisin."
+            user_prompt = f"""
+            Öğrencinin seviyesi {st.session_state.seviye}.
+            Bu seviyeye uygun, imla ve büyük/küçük harf kuralları barındıran 1 adet Almanca cümle üret.
+            JSON Formatı:
+            {{
+                "cumle_de": "Örn: Gestern habe ich einen großen Hund gesehen.",
+                "cumle_tr": "Örn: Dün büyük bir köpek gördüm.",
+                "ipucu": "Cümledeki zor bir kelimenin ipucu"
+            }}"""
+            res = get_json_from_llm(sys_prompt, user_prompt)
+            if res:
+                st.session_state.diktat_data = res
+                st.rerun()
+                
+    if st.session_state.diktat_data:
+        d = st.session_state.diktat_data
+        
+        try:
+            tts = gTTS(text=d["cumle_de"], lang='de')
+            s_fp = io.BytesIO()
+            tts.write_to_fp(s_fp)
+            st.audio(s_fp, format='audio/mp3')
+        except:
+            st.error("Ses sentezlenemedi.")
+            
+        st.caption(f"💡 İpucu: {d.get('ipucu')}")
+        
+        user_input = st.text_input("Duyduğun cümleyi Almanca olarak eksiksiz yaz:")
+        if st.button("Kontrol Et", type="primary"):
+            if user_input.strip() == d["cumle_de"].strip():
+                st.success("🎉 Kusursuz! Harika bir kulak ve imla.")
+                update_performance("Diktat", 100)
+            else:
+                st.error(f"❌ Hatalı veya eksik yazdın.\n\n**Doğrusu:** `{d['cumle_de']}`\n**Senin yazdığın:** `{user_input}`")
+
+# ------------------------------------------
+# YENİ EKLENTİ 2: REDEWENDUNGEN (DEYİMLER KÖŞESİ)
+# ------------------------------------------
+elif sayfa == "💬 Redewendungen (Deyimler Köşesi)":
+    st.markdown(f'<div class="module-header">💬 Redewendungen & Sprichwörter</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Almanların günlük hayatta kafasına göre kullandığı efsanevi deyimleri ve kökenlerini öğren.</div>', unsafe_allow_html=True)
+    
+    if st.button("🎲 Rastgele Bir Deyim Keşfet", type="primary"):
+        with st.spinner("Alman kültüründen bir deyim çekiliyor..."):
+            sys_prompt = "Sen bir Alman kültür ve dil uzmanısın."
+            user_prompt = f"""
+            Öğrenci {st.session_state.seviye} seviyesinde. Günlük hayatta sık kullanılan popüler bir Almanca deyim (Redewendung) seç.
+            JSON Formatı:
+            {{
+                "deyim": "Örn: Ich verstehe nur Bahnhof",
+                "kelime_anlami": "Kelime kelime çevirisi",
+                "gercek_anlami": "Deyim olarak ne anlama geldiği (Türkçe)",
+                "ornek_cumle": "Almanca örnek kullanım",
+                "ornek_tr": "Örnek cümlenin Türkçesi"
+            }}"""
+            res = get_json_from_llm(sys_prompt, user_prompt)
+            if res:
+                st.markdown(f"""
+                <div style="background: rgba(30, 41, 59, 0.7); padding: 30px; border-radius: 16px; border-left: 6px solid #fbbf24; margin-top: 20px;">
+                    <h2 style="color: #fbbf24; margin-top:0;">{res.get('deyim')}</h2>
+                    <p><b>Kelime Anlamı:</b> {res.get('kelime_anlami')}</p>
+                    <p><b>Gerçek Anlamı:</b> {res.get('gercek_anlami')}</p>
+                    <hr style="border-color: #334155;">
+                    <p style="font-style: italic; color: #60a5fa;">🇩🇪 "{res.get('ornek_cumle')}"</p>
+                    <p style="color: #94a3b8;">🇹🇷 {res.get('ornek_tr')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+# ------------------------------------------
+# YENİ EKLENTİ 3: PHONETIK-TRAINER (TELAFUZ ANALİZİ)
+# ------------------------------------------
+elif sayfa == "🎙️ Phonetik-Trainer (Telaffuz Analizi)":
+    st.markdown(f'<div class="module-header">🎙️ Phonetik-Trainer</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Almancaya özgü zor sesleri (ü, ö, ch, sch, z) ne kadar doğru çıkardığını test et.</div>', unsafe_allow_html=True)
+    
+    ornek_kelimeler = ["München", "Schmetterling", "Zwischen", "Fuchs", "Österreich", "Sprachwissenschaft"]
+    secilen_kelime = st.selectbox("Telaffuz etmek için bir kelime seç:", ornek_kelimeler)
+    
+    st.markdown(f"""
+    <div style="background: #1e293b; padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
+        <span style="font-size: 32px; font-weight: bold; color: #60a5fa;">{secilen_kelime}</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    mic_audio = st.audio_input("🎤 Kelimeyi mikrofona net bir şekilde oku:")
+    if mic_audio and client:
+        with st.spinner("Telaffuzun analiz ediliyor..."):
+            try:
+                transcription = client.audio.transcriptions.create(
+                    file=("audio.wav", mic_audio.getvalue()),
+                    model="whisper-large-v3",
+                    response_format="json"
+                )
+                soylenen = transcription.text.strip()
+                st.markdown(f"**Algılanan Metin:** `{soylenen}`")
+                
+                if secilen_kelime.lower() in soylenen.lower():
+                    st.success("🎉 Mükemmel telaffuz! Kelime tam olarak anlaşıldı.")
+                    update_performance("Phonetik", 100)
+                else:
+                    st.warning("⚠️ Biraz daha pratik yapmalısın. Ses hedef kelimeyle tam uyuşmadı.")
+            except Exception as e:
+                st.error(f"Telaffuz analizi hatası: {e}")
 
 # ------------------------------------------
 # Lesen (Okuma)
