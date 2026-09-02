@@ -22,36 +22,157 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,700;1,400&display=swap');
     
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; color: #f1f5f9; background-color: #0f172a; }
+    html, body, [class*="css"] { 
+        font-family: 'Inter', sans-serif; 
+        color: #f1f5f9; 
+        background-color: #0f172a; 
+    }
     
-    .dashboard-card { background: linear-gradient(145deg, #1e293b, #0f172a); padding: 25px; border-radius: 16px; border: 1px solid #334155; border-left: 6px solid #3b82f6; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); transition: transform 0.2s, box-shadow 0.2s; margin-bottom: 20px; }
-    .dashboard-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); }
-    .card-title { font-size: 15px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; font-weight: 600; }
-    .card-value { font-size: 38px; font-weight: 800; color: #f8fafc; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+    .dashboard-card { 
+        background: linear-gradient(145deg, #1e293b, #0f172a); 
+        padding: 25px; 
+        border-radius: 16px; 
+        border: 1px solid #334155; 
+        border-left: 6px solid #3b82f6; 
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); 
+        transition: transform 0.2s, box-shadow 0.2s; 
+        margin-bottom: 20px; 
+    }
     
-    .module-header { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; color: #e2e8f0; margin-bottom: 5px; }
-    .module-subtitle { font-size: 16px; color: #64748b; margin-bottom: 25px; font-weight: 300; }
+    .dashboard-card:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); 
+    }
     
-    .feedback-success { background-color: rgba(6, 78, 59, 0.4); padding: 25px; border-radius: 12px; border: 1px solid #10b981; border-left: 6px solid #059669; margin-top: 20px; color: #ecfdf5; }
-    .feedback-error { background-color: rgba(69, 10, 10, 0.4); padding: 25px; border-radius: 12px; border: 1px solid #ef4444; border-left: 6px solid #dc2626; margin-top: 20px; color: #fef2f2; }
-    .feedback-warning { background-color: rgba(120, 53, 15, 0.4); padding: 25px; border-radius: 12px; border: 1px solid #f59e0b; border-left: 6px solid #d97706; margin-top: 20px; color: #fffbeb; }
+    .card-title { 
+        font-size: 15px; 
+        color: #94a3b8; 
+        text-transform: uppercase; 
+        letter-spacing: 1.5px; 
+        margin-bottom: 10px; 
+        font-weight: 600; 
+    }
     
-    .native-speaker-box { background-color: rgba(30, 58, 138, 0.3); padding: 20px; border-radius: 10px; margin-top: 20px; border-left: 6px solid #3b82f6; color: #eff6ff; font-family: 'Inter', sans-serif; }
-    .native-label { font-size: 12px; color: #93c5fd; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 8px; display: block; }
+    .card-value { 
+        font-size: 38px; 
+        font-weight: 800; 
+        color: #f8fafc; 
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3); 
+    }
     
-    .lesson-box { background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; border-radius: 12px; padding: 35px; margin-bottom: 20px; border-top: 4px solid #8b5cf6; min-height: 400px; }
+    .module-header { 
+        font-family: 'Playfair Display', serif; 
+        font-size: 32px; 
+        font-weight: 700; 
+        color: #e2e8f0; 
+        margin-bottom: 5px; 
+    }
     
-    .flashcard { background: linear-gradient(180deg, #1e293b, #0f172a); border: 2px solid #3b82f6; border-radius: 20px; padding: 30px; text-align: center; box-shadow: 0 15px 30px rgba(0,0,0,0.4); min-height: 380px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+    .module-subtitle { 
+        font-size: 16px; 
+        color: #64748b; 
+        margin-bottom: 25px; 
+        font-weight: 300; 
+    }
+    
+    .feedback-success { 
+        background-color: rgba(6, 78, 59, 0.4); 
+        padding: 25px; 
+        border-radius: 12px; 
+        border: 1px solid #10b981; 
+        border-left: 6px solid #059669; 
+        margin-top: 20px; 
+        color: #ecfdf5; 
+    }
+    
+    .feedback-error { 
+        background-color: rgba(69, 10, 10, 0.4); 
+        padding: 25px; 
+        border-radius: 12px; 
+        border: 1px solid #ef4444; 
+        border-left: 6px solid #dc2626; 
+        margin-top: 20px; 
+        color: #fef2f2; 
+    }
+    
+    .feedback-warning { 
+        background-color: rgba(120, 53, 15, 0.4); 
+        padding: 25px; 
+        border-radius: 12px; 
+        border: 1px solid #f59e0b; 
+        border-left: 6px solid #d97706; 
+        margin-top: 20px; 
+        color: #fffbeb; 
+    }
+    
+    .native-speaker-box { 
+        background-color: rgba(30, 58, 138, 0.3); 
+        padding: 20px; 
+        border-radius: 10px; 
+        margin-top: 20px; 
+        border-left: 6px solid #3b82f6; 
+        color: #eff6ff; 
+        font-family: 'Inter', sans-serif; 
+    }
+    
+    .native-label { 
+        font-size: 12px; 
+        color: #93c5fd; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+        font-weight: 800; 
+        margin-bottom: 8px; 
+        display: block; 
+    }
+    
+    .lesson-box { 
+        background: rgba(15, 23, 42, 0.6); 
+        border: 1px solid #334155; 
+        border-radius: 12px; 
+        padding: 35px; 
+        margin-bottom: 20px; 
+        border-top: 4px solid #8b5cf6; 
+        min-height: 400px; 
+    }
+    
+    .flashcard { 
+        background: linear-gradient(180deg, #1e293b, #0f172a); 
+        border: 2px solid #3b82f6; 
+        border-radius: 20px; 
+        padding: 30px; 
+        text-align: center; 
+        box-shadow: 0 15px 30px rgba(0,0,0,0.4); 
+        min-height: 380px; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: center; 
+        position: relative; 
+    }
     
     .css-1d391kg { background-color: #0b1120; }
     
-    .sidebar-header { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: #f8fafc; text-align: center; margin-bottom: 30px; letter-spacing: 1px; border-bottom: 1px solid #1e293b; padding-bottom: 15px; }
+    .sidebar-header { 
+        font-family: 'Playfair Display', serif; 
+        font-size: 28px; 
+        font-weight: 700; 
+        color: #f8fafc; 
+        text-align: center; 
+        margin-bottom: 30px; 
+        letter-spacing: 1px; 
+        border-bottom: 1px solid #1e293b; 
+        padding-bottom: 15px; 
+    }
     
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: #0f172a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     
-    .streamlit-expanderHeader { font-size: 14px; font-weight: 600; color: #94a3b8; }
+    .streamlit-expanderHeader { 
+        font-size: 14px; 
+        font-weight: 600; 
+        color: #94a3b8; 
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -77,26 +198,43 @@ CEFR_RULES = {
 def init_db():
     conn = sqlite3.connect('akademie_master_pro.db', check_same_thread=False)
     c = conn.cursor()
+    
     c.execute('''CREATE TABLE IF NOT EXISTS vocabulary (
         id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        almanca TEXT UNIQUE, turkce TEXT, seviye TEXT, ease_factor REAL DEFAULT 2.5, 
-        interval INTEGER DEFAULT 1, next_review DATE, ornek_de TEXT, ornek_tr TEXT,
-        correct_streak INTEGER DEFAULT 0, last_reviewed DATE, emoji TEXT DEFAULT '💠'
+        almanca TEXT UNIQUE, 
+        turkce TEXT, 
+        seviye TEXT,
+        ease_factor REAL DEFAULT 2.5, 
+        interval INTEGER DEFAULT 1, 
+        next_review DATE, 
+        ornek_de TEXT, 
+        ornek_tr TEXT,
+        correct_streak INTEGER DEFAULT 0, 
+        last_reviewed DATE, 
+        emoji TEXT DEFAULT '💠'
     )''')
+    
     try: 
         c.execute("ALTER TABLE vocabulary ADD COLUMN emoji TEXT DEFAULT '💠'")
     except sqlite3.OperationalError: 
         pass 
         
     c.execute('''CREATE TABLE IF NOT EXISTS stats (
-        user_id INTEGER PRIMARY KEY, streak INTEGER DEFAULT 0, last_login DATE, 
-        total_xp INTEGER DEFAULT 0, level TEXT DEFAULT 'A1.1', 
-        modules_completed INTEGER DEFAULT 0, accuracy_rate REAL DEFAULT 100.0
+        user_id INTEGER PRIMARY KEY, 
+        streak INTEGER DEFAULT 0, 
+        last_login DATE, 
+        total_xp INTEGER DEFAULT 0,
+        level TEXT DEFAULT 'A1.1', 
+        modules_completed INTEGER DEFAULT 0, 
+        accuracy_rate REAL DEFAULT 100.0
     )''')
     
     c.execute('''CREATE TABLE IF NOT EXISTS performance_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, module_name TEXT, 
-        score INTEGER, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        user_id INTEGER, 
+        module_name TEXT, 
+        score INTEGER, 
+        date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     
     c.execute("SELECT COUNT(*) FROM stats")
@@ -168,6 +306,7 @@ client = Groq(api_key=api_key)
 def get_json_from_llm(system_prompt, user_prompt, model="openai/gpt-oss-120b"):
     cefr_kurali = CEFR_RULES.get(st.session_state.seviye, "")
     ders_kurali = ""
+    
     if st.session_state.gunun_konusu:
         ders_kurali = f"\nÖğrencinin bugünkü aktif ders konusu: '{st.session_state.gunun_konusu}'. Eğer test üretiyorsan içeriği kesinlikle bu konuya odakla."
         
@@ -191,6 +330,7 @@ def get_json_from_llm(system_prompt, user_prompt, model="openai/gpt-oss-120b"):
         )
         
         raw_content = response.choices[0].message.content.strip()
+        
         clean_content = re.sub(r"^```json\s*", "", raw_content, flags=re.IGNORECASE)
         clean_content = re.sub(r"^```\s*", "", clean_content)
         clean_content = re.sub(r"\s*```$", "", clean_content)
@@ -210,6 +350,7 @@ st.sidebar.markdown(
 )
 
 progress_val = (st.session_state.xp % 2000) / 2000
+
 st.sidebar.markdown(f"""
     <div style="background: rgba(30, 41, 59, 0.5); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #334155;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
@@ -239,6 +380,7 @@ if yeni_seviye != st.session_state.seviye:
     update_level(yeni_seviye)
 
 st.sidebar.markdown("---")
+
 sayfa = st.sidebar.radio("📚 ÖĞRENME MODÜLLERİ", [
     "📊 Akademi Paneli", 
     "📚 Lektionen (Kur Eğitimi)", 
@@ -279,7 +421,7 @@ if sayfa == "📊 Akademi Paneli":
         st.info(f"📌 **Günün Aktif Konusu:** {st.session_state.gunun_konusu} (Sınavlar bu konuya göre üretilecek)")
 
 # ------------------------------------------
-# SAYFALI VE KAPSAMLI EĞİTİM MODÜLÜ
+# SAYFALI VE KAPSAMLI EĞİTİM MODÜLÜ (LEKTIONEN)
 # ------------------------------------------
 elif sayfa == "📚 Lektionen (Kur Eğitimi)":
     st.markdown(f'<div class="module-header">📚 Kur Eğitimi: {st.session_state.seviye}</div>', unsafe_allow_html=True)
@@ -376,7 +518,7 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
             for orn in sayfa_data.get('ornekler', []):
                 st.markdown(f"""
                 <div style='background: rgba(0,0,0,0.4); padding: 15px; border-left: 4px solid #60a5fa; border-radius: 6px; margin-bottom: 12px;'>
-                    <div style='font-size:18px; color:#f8fafc; margin-bottom:4px; font-weight:bold;'>🇩🇪 {orn['de']}</div>
+                    <div style='font-size:18px; color:#f8fafc; margin-bottom:4px; font-weight:bold;'>{orn['de']}</div>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -389,7 +531,7 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
                     pass
                     
                 with st.expander("Türkçesini Gör (Gizli)"): 
-                    st.write(f"🇹🇷 {orn['tr']}")
+                    st.write(f"{orn['tr']}")
                     
                 st.markdown("---")
 
@@ -410,6 +552,7 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
                     if st.button("✅ Dersi Bitir & Kelimeleri Hafızaya Al", use_container_width=True, type="primary"):
                         kelimeler = d.get("yeni_kelimeler", [])
                         eklenen = 0
+                        
                         for k in kelimeler:
                             try:
                                 c.execute(
@@ -572,6 +715,7 @@ elif sayfa == "🎧 Hören (Dinleme Testi)":
             }}"""
             
             data = get_json_from_llm(sys_prompt, user_prompt)
+            
             if data:
                 st.session_state.horen_data = data
                 st.rerun()
@@ -644,6 +788,7 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
                 "durum": "Türkçe açıklama.", 
                 "kullanilmasi_istenen_yapilar": "Zorunlu gramer kuralı."
             }}"""
+            
             data = get_json_from_llm(sys_prompt, user_prompt)
             if data: 
                 st.session_state.schreiben_gorev_data = data
@@ -713,7 +858,7 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
                 st.rerun()
 
 # ------------------------------------------
-# Sprechen (Konuşma Pratiği) - MIC ERROR FIX & HTML FIX
+# Sprechen (Konuşma Pratiği) - MIC LOOP FIX & HTML FIX
 # ------------------------------------------
 elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
     st.markdown(f'<div class="module-header">🗣️ Sprechen ({st.session_state.seviye})</div>', unsafe_allow_html=True)
@@ -736,6 +881,7 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
             else:
                 c_html = f'<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 13px; color: #fbbf24;">💡 <b>Düzeltme:</b> {msg["correction"]}</div>' if msg.get("correction") else ''
                 
+                # HTML sızıntısı giderildi, TR/DE ibareleri kaldırıldı
                 st.markdown(f"""
                 <div style="display: flex; justify-content: flex-start; margin-bottom: 15px;">
                     <div style="background-color: #1e293b; color: #f8fafc; padding: 15px; border-radius: 18px 18px 18px 4px; max-width: 85%; border: 1px solid #334155;">
@@ -749,6 +895,7 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
     st.markdown('---')
     audio_bytes = st.audio_input("🎤 Söylemek istediklerini mikrofona konuş:")
     
+    # Loop engellemek için session state kontrolü eklendi
     if audio_bytes and client:
         if "last_audio" not in st.session_state or st.session_state.last_audio != audio_bytes:
             st.session_state.last_audio = audio_bytes
@@ -786,7 +933,7 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
                     st.error(f"Ses işleme sistemi hatası: {str(e)}")
 
 # ------------------------------------------
-# SRS KARTLARI
+# SRS KARTLARI (Index Çökme Hatası Giderildi)
 # ------------------------------------------
 elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
     st.markdown('<div class="module-header">🧠 Görsel Akıllı Hafıza</div>', unsafe_allow_html=True)
@@ -806,6 +953,7 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
         if "kart_yuzu" not in st.session_state: 
             st.session_state.kart_yuzu = "on"
             
+        # Hatayı çözen güvenli veri ataması
         kart_verisi = kelimeler[0]
         k_id = kart_verisi[0]
         de_kelime = kart_verisi[1]
@@ -830,7 +978,9 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     <div style="font-size: 42px; font-weight: 800; color: #60a5fa; margin-bottom: 10px;">{de_kelime}</div>
                 </div>
                 """, unsafe_allow_html=True)
+                
                 st.markdown("<br>", unsafe_allow_html=True)
+                
                 if st.button("🔄 Anlamını Hatırladım / Göster", use_container_width=True, type="primary"): 
                     st.session_state.kart_yuzu = "arka"
                     st.rerun()
@@ -852,6 +1002,7 @@ elif sayfa == "🧠 Akıllı Hafıza (SRS Kartları)":
                     {ornek_html}
                 </div>
                 """, unsafe_allow_html=True)
+                
                 st.markdown("<br>", unsafe_allow_html=True)
                 
                 c1, c2, c3 = st.columns(3)
@@ -1010,17 +1161,23 @@ elif sayfa == "📝 Sınav Merkezi (Prüfung)":
             st.markdown("### ✏️ Bölüm 3: Boşluk Doldurma")
             bd = d.get("bosluk_doldurma", {})
             st.markdown(f"*{bd.get('metin', '')}*")
+            
             col_bd1, col_bd2 = st.columns(2)
-            with col_bd1: st.text_input("1. Boşluk:", key="s_bd1")
-            with col_bd2: st.text_input("2. Boşluk:", key="s_bd2")
+            with col_bd1: 
+                st.text_input("1. Boşluk:", key="s_bd1")
+            with col_bd2: 
+                st.text_input("2. Boşluk:", key="s_bd2")
             
             st.markdown("---")
             st.markdown("### 🔤 Bölüm 4: Kelime Tamamlama")
             kt = d.get("kelime_tamamlama", {})
             st.markdown(f"*{kt.get('metin', '')}*")
+            
             col_kt1, col_kt2 = st.columns(2)
-            with col_kt1: st.text_input("1. Kelimenin tamamı:", key="s_kt1")
-            with col_kt2: st.text_input("2. Kelimenin tamamı:", key="s_kt2")
+            with col_kt1: 
+                st.text_input("1. Kelimenin tamamı:", key="s_kt1")
+            with col_kt2: 
+                st.text_input("2. Kelimenin tamamı:", key="s_kt2")
 
     # === TAB 2: HÖREN SINAVI ===
     with tab2:
@@ -1068,6 +1225,7 @@ elif sayfa == "📝 Sınav Merkezi (Prüfung)":
                     tts = gTTS(text=hd.get("dinleme_metni", ""), lang='de')
                     sound_fp = io.BytesIO()
                     tts.write_to_fp(sound_fp)
+                    
                 st.audio(sound_fp, format='audio/mp3')
             except:
                 st.error("Ses motoru bu uzun metni işlerken bir hata ile karşılaştı.")
@@ -1096,26 +1254,22 @@ elif sayfa == "📝 Sınav Merkezi (Prüfung)":
         if st.session_state.sinav_lesen_data:
             ld = st.session_state.sinav_lesen_data
             
-            # Okuma
             for i, sq in enumerate(ld.get("okuma_sorulari", [])):
                 toplam_soru += 1
                 if st.session_state.get(f"sr_{i}") == sq.get("dogru"):
                     dogru_cevap += 1
                     
-            # Eşleştirme
             for i, p in enumerate(ld.get("eslestirme", {}).get("paragraflar", [])):
                 toplam_soru += 1
                 if st.session_state.get(f"sb_{i}") == p.get("dogru_baslik"):
                     dogru_cevap += 1
             
-            # Boşluk Doldurma
             bd_cevaplar = ld.get("bosluk_doldurma", {}).get("dogru_cevaplar", [])
             if len(bd_cevaplar) >= 2:
                 toplam_soru += 2
                 if st.session_state.get("s_bd1", "").strip().lower() == bd_cevaplar[0].lower(): dogru_cevap += 1
                 if st.session_state.get("s_bd2", "").strip().lower() == bd_cevaplar[1].lower(): dogru_cevap += 1
                 
-            # Kelime Tamamlama
             kt_cevaplar = ld.get("kelime_tamamlama", {}).get("dogru_cevaplar", [])
             if len(kt_cevaplar) >= 2:
                 toplam_soru += 2
