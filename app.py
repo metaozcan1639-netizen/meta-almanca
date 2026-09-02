@@ -690,7 +690,7 @@ elif sayfa == "🔄 Hata Havuzundan Telafi Sınavı":
                     st.markdown("---")
                     
                 if st.form_submit_button("Sınavı Tamamla", type="primary"):
-                    dogru_ t = 0
+                    dogru_t = 0
                     for i, sq in enumerate(st.session_state.telafi_data):
                         if cevaplar.get(i) == sq['dogru']:
                             dogru_ t += 1
