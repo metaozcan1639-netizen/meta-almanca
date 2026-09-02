@@ -424,6 +424,7 @@ sayfa = st.sidebar.radio("📚 ÖĞRENME MODÜLLERİ", [
     "🎧 Diktat-Trainer (Sesli Diktat)",
     "💬 Redewendungen (Deyimler Köşesi)",
     "🎙️ Phonetik-Trainer (Telaffuz Analizi)",
+    "🔄 Hata Havuzundan Telafi Sınavı",
     "📝 Sınav Merkezi (Prüfung)"
 ])
 
@@ -498,7 +499,7 @@ if sayfa == "📊 Akademi Paneli":
         st.info("Henüz kaydedilmiş bir performans geçmişi yok.")
 
 # ------------------------------------------
-# YENİ EKLENTİ: AKILLI ADAPTİF SEVİYE ANALİZİ
+# ADAPTİF SEVİYE ANALİZİ
 # ------------------------------------------
 elif sayfa == "🎯 Adaptif Seviye Analizi":
     st.markdown(f'<div class="module-header">🎯 Akıllı Adaptif Seviye Analizi</div>', unsafe_allow_html=True)
@@ -608,7 +609,6 @@ elif sayfa == "🎯 Adaptif Seviye Analizi":
         res = st.session_state.adaptif_sonuc
         dogru = res["dogru"]
         
-        # Seviye tespiti mantığı
         tahmini_seviye = "A1.1"
         if dogru >= 5: tahmini_seviye = "C1 / C2"
         elif dogru == 4: tahmini_seviye = "B2"
@@ -637,6 +637,75 @@ elif sayfa == "🎯 Adaptif Seviye Analizi":
             st.session_state.adaptif_asama = "giris"
             st.session_state.adaptif_sorular = []
             st.rerun()
+
+# ------------------------------------------
+# YENİ EKLENTİ 1: HATA HAVUZUNDAN TELAFİ SINAVI
+# ------------------------------------------
+elif sayfa == "🔄 Hata Havuzundan Telafi Sınavı":
+    st.markdown(f'<div class="module-header">🔄 Özel Telafi Sınavı</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Bugüne kadar Zayıf Nokta Radarı\'na takıldığın hatalardan oluşan, sana özel nokta atışı kapatma sınavı.</div>', unsafe_allow_html=True)
+    
+    c.execute("SELECT topic, count FROM mistakes WHERE user_id=1 ORDER BY count DESC LIMIT 3")
+    zayiflar = c.fetchall()
+    
+    if not zayiflar:
+        st.success("Harika! Zayıf nokta havuzunda kayıtlı bir hata bulunmuyor. Sistem henüz tekrarlayan bir hata tespit etmedi.")
+    else:
+        st.markdown("### 🎯 Hedeflenen Zayıf Alanların:")
+        topics_str = ", ".join([f"'{t[0]}'" for t in zayiflar])
+        st.info(f"Bu sınav doğrudan şu konulara odaklanacak: **{topics_str}**")
+        
+        if "telafi_data" not in st.session_state: st.session_state.telafi_data = None
+        if "telafi_bitti" not in st.session_state: st.session_state.telafi_bitti = False
+        
+        if st.button("🚀 Telafi Sınavını Başlat", type="primary"):
+            with st.spinner("Zayıf noktalarına özel sorular derleniyor..."):
+                sys_prompt = "Sen uzman bir dilbilimci ve Almanca koçusun."
+                user_prompt = f"""
+                Öğrencinin en çok hata yaptığı konular: {topics_str}.
+                Bu konuları test eden 3 adet çoktan seçmeli özel soru hazırla.
+                JSON Formatı:
+                {{
+                    "sorular": [
+                        {{
+                            "soru": "Soru metni...",
+                            "konu": "İlgili konu",
+                            "secenekler": ["A) ...", "B) ...", "C) ..."],
+                            "dogru": "A) ..."
+                        }}
+                    ]
+                }}"""
+                res = get_json_from_llm(sys_prompt, user_prompt)
+                if res and "sorular" in res:
+                    st.session_state.telafi_data = res["sorular"]
+                    st.session_state.telafi_bitti = False
+                    st.rerun()
+                    
+        if st.session_state.telafi_data and not st.session_state.telafi_bitti:
+            with st.form("telafi_sinav_form"):
+                cevaplar = {}
+                for i, sq in enumerate(st.session_state.telafi_data):
+                    st.markdown(f"**Soru {i+1} ({sq['konu']}):** {sq['soru']}")
+                    cevaplar[i] = st.radio(f"Şıklar {i}:", sq['secenekler'], index=None, key=f"tel_q_{i}")
+                    st.markdown("---")
+                    
+                if st.form_submit_button("Sınavı Tamamla", type="primary"):
+                    dogru_ t = 0
+                    for i, sq in enumerate(st.session_state.telafi_data):
+                        if cevaplar.get(i) == sq['dogru']:
+                            dogru_ t += 1
+                    st.session_state.telafi_bitti = True
+                    st.session_state.telafi_dogru = dogru_ t
+                    st.rerun()
+                    
+        if st.session_state.get("telafi_bitti", False):
+            d_sayi = st.session_state.telafi_dogru
+            t_sayi = len(st.session_state.telafi_data)
+            st.success(f"🎉 Telafi Sınavı Tamamlandı! Doğru Sayısı: {d_sayi}/{t_sayi}")
+            if st.button("🔄 Yeni Sınav Oluştur"):
+                st.session_state.telafi_data = None
+                st.session_state.telafi_bitti = False
+                st.rerun()
 
 # ------------------------------------------
 # KAPSAMLI EĞİTİM MODÜLÜ (TÜRKÇE ANLATIM)
@@ -804,7 +873,7 @@ elif sayfa == "📚 Lektionen (Kur Eğitimi)":
 # ------------------------------------------
 elif sayfa == "📰 Tagesbericht (Kişisel Bülten)":
     st.markdown(f'<div class="module-header">📰 Tagesbericht ({st.session_state.seviye})</div>', unsafe_allow_html=True)
-    st.markdown('<div class="module-subtitle">İlgi alanlarına göre özelleştirilmiş, her gün değişen Almanca makaleler.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">İlgi alanlarına göre özelleştirilmiş, her gün değişen Almanca makaleler. Bilmediğin kelimelere tıklayarak sözlüğe ekleyebilirsin.</div>', unsafe_allow_html=True)
     
     if "bulten_data" not in st.session_state: 
         st.session_state.bulten_data = None
@@ -865,9 +934,20 @@ elif sayfa == "📰 Tagesbericht (Kişisel Bülten)":
         with st.expander("Metnin Türkçe Çevirisini Gör"): 
             st.write(d.get("makale_tr"))
             
-        st.markdown("### 🔑 Metinden Önemli Kelimeler")
+        st.markdown("### 🔑 Metinden Önemli Kelimeler (Tek Tıkla Sözlüğe Ekle)")
         for kelime in d.get("onemli_kelimeler", []):
-            st.markdown(f"**{kelime.get('de')}** - {kelime.get('tr')}")
+            col_k1, col_k2 = st.columns([3, 1])
+            with col_k1:
+                st.markdown(f"**{kelime.get('de')}** - {kelime.get('tr')}")
+            with col_k2:
+                if st.button("➕ Sözlüğe Ekle", key=f"add_bulten_{kelime.get('de')}"):
+                    try:
+                        c.execute("INSERT INTO vocabulary (almanca, turkce, seviye, next_review, last_reviewed) VALUES (?, ?, ?, ?, ?)", 
+                                  (kelime.get('de'), kelime.get('tr'), st.session_state.seviye, bugun, bugun))
+                        conn.commit()
+                        st.toast(f"✅ '{kelime.get('de')}' sözlüğe eklendi!", icon="📚")
+                    except sqlite3.IntegrityError:
+                        st.toast(f"⚠️ '{kelime.get('de')}' zaten sözlüğünde var.", icon="ℹ️")
 
 # ------------------------------------------
 # İNTERAKTİF KELİME QUİZLERİ
