@@ -425,6 +425,7 @@ sayfa = st.sidebar.radio("📚 ÖĞRENME MODÜLLERİ", [
     "💬 Redewendungen (Deyimler Köşesi)",
     "🎙️ Phonetik-Trainer (Telaffuz Analizi)",
     "🔄 Hata Havuzundan Telafi Sınavı",
+    "📜 Dahili Akademi Karnesi",
     "📝 Sınav Merkezi (Prüfung)"
 ])
 
@@ -639,7 +640,7 @@ elif sayfa == "🎯 Adaptif Seviye Analizi":
             st.rerun()
 
 # ------------------------------------------
-# YENİ EKLENTİ 1: HATA HAVUZUNDAN TELAFİ SINAVI
+# HATA HAVUZUNDAN TELAFİ SINAVI
 # ------------------------------------------
 elif sayfa == "🔄 Hata Havuzundan Telafi Sınavı":
     st.markdown(f'<div class="module-header">🔄 Özel Telafi Sınavı</div>', unsafe_allow_html=True)
@@ -690,12 +691,12 @@ elif sayfa == "🔄 Hata Havuzundan Telafi Sınavı":
                     st.markdown("---")
                     
                 if st.form_submit_button("Sınavı Tamamla", type="primary"):
-                    dogru_t = 0
+                    dogru_sayisi = 0
                     for i, sq in enumerate(st.session_state.telafi_data):
                         if cevaplar.get(i) == sq['dogru']:
-                            dogru_ t += 1
+                            dogru_sayisi += 1
                     st.session_state.telafi_bitti = True
-                    st.session_state.telafi_dogru = dogru_ t
+                    st.session_state.telafi_dogru = dogru_sayisi
                     st.rerun()
                     
         if st.session_state.get("telafi_bitti", False):
@@ -708,7 +709,58 @@ elif sayfa == "🔄 Hata Havuzundan Telafi Sınavı":
                 st.rerun()
 
 # ------------------------------------------
-# KAPSAMLI EĞİTİM MODÜLÜ (TÜRKÇE ANLATIM)
+# DAHİLİ AKADEMİ KARNESİ (YENİ EKLENTİ)
+# ------------------------------------------
+elif sayfa == "📜 Dahili Akademi Karnesi":
+    st.markdown(f'<div class="module-header">📜 Akademi Karnesi & Performans Özeti</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Uygulama içinde tutulan resmi başarı karnen ve gelişim özetin.</div>', unsafe_allow_html=True)
+    
+    c.execute("SELECT total_xp, streak, level, accuracy_rate, modules_completed FROM stats WHERE user_id=1")
+    user_stats = c.fetchone()
+    
+    if user_stats:
+        xp, streak, level, acc, mods = user_stats
+        
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 2px solid #3b82f6; border-radius: 16px; padding: 30px; margin-bottom: 25px;">
+            <h2 style="color: #60a5fa; margin-top:0; border-bottom: 1px solid #334155; padding-bottom: 10px;">🏛️ Goethe AI Resmi Başarı Karnesi</h2>
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <div>
+                    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 2px;">MEVCUT SEVİYE</p>
+                    <b style="font-size: 24px; color: #f8fafc;">{level}</b>
+                </div>
+                <div>
+                    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 2px;">TOPLAM XP</p>
+                    <b style="font-size: 24px; color: #fbbf24;">🌟 {xp} XP</b>
+                </div>
+                <div>
+                    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 2px;">GÜNLÜK SERİ</p>
+                    <b style="font-size: 24px; color: #f43f5e;">🔥 {streak} Gün</b>
+                </div>
+                <div>
+                    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 2px;">GENEL BAŞARI</p>
+                    <b style="font-size: 24px; color: #34d399;">%{acc:.1f}</b>
+                </div>
+            </div>
+            <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #334155; color: #94a3b8; font-size: 15px;">
+                Tamamlanan Toplam Modül / Ders: <b style="color: #f8fafc;">{mods}</b>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("### 📋 Modül Bazlı Sonuç Kayıtları")
+        c.execute("SELECT module_name, score, date FROM performance_logs ORDER BY date DESC LIMIT 10")
+        karneloglar = c.fetchall()
+        if karneloglar:
+            for mn, sc, dt in karneloglar:
+                st.markdown(f"<div style='background:rgba(30,41,59,0.4); padding:10px 15px; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between;'><span style='color:#f8fafc;'><b>{mn}</b> modülü</span><span style='color:#34d399;'>Puan: {sc}</span><span style='color:#94a3b8; font-size:13px;'>{dt}</span></div>", unsafe_allow_html=True)
+        else:
+            st.info("Henüz karneye yansıyacak modül aktivitesi bulunmuyor.")
+    else:
+        st.warning("Karnenize ait veri bulunamadı.")
+
+# ------------------------------------------
+# Kapsamlı Eğitim Modülü (Lektionen)
 # ------------------------------------------
 elif sayfa == "📚 Lektionen (Kur Eğitimi)":
     st.markdown(f'<div class="module-header">📚 Kur Eğitimi: {st.session_state.seviye}</div>', unsafe_allow_html=True)
