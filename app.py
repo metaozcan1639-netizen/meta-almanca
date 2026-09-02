@@ -843,7 +843,7 @@ elif sayfa == "✍️ Schreiben (Yapısal Üretim)":
                 st.rerun()
 
 # ------------------------------------------
-# Sprechen (Konuşma Pratiği) - MIC ERROR FIX
+# Sprechen (Konuşma Pratiği) - HATA DÜZELTİLDİ
 # ------------------------------------------
 elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
     st.markdown(f'<div class="module-header">🗣️ Sprechen ({st.session_state.seviye})</div>', unsafe_allow_html=True)
@@ -865,6 +865,8 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
                 """, unsafe_allow_html=True)
             else:
                 c_html = f'<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 13px; color: #fbbf24;">💡 <b>Düzeltme:</b> {msg["correction"]}</div>' if msg.get("correction") else ''
+                
+                # DIV hatası kalıcı olarak giderildi
                 st.markdown(f"""
                 <div style="display: flex; justify-content: flex-start; margin-bottom: 15px;">
                     <div style="background-color: #1e293b; color: #f8fafc; padding: 15px; border-radius: 18px 18px 18px 4px; max-width: 85%; border: 1px solid #334155;">
@@ -878,40 +880,42 @@ elif sayfa == "🗣️ Sprechen (Akıcılık Odası)":
     st.markdown('---')
     audio_bytes = st.audio_input("🎤 Söylemek istediklerini mikrofona konuş:")
     
+    # Spam/Loop hatasını önleyen session_state kontrolü
     if audio_bytes and client:
-        with st.spinner("🎙️ İşleniyor..."):
-            try:
-                # getvalue() kullanılarak raw byte formatı garantilendi. (Mikrofon hatası kökten çözümü)
-                audio_content = audio_bytes.getvalue()
-                
-                transcription = client.audio.transcriptions.create(
-                    file=("audio.wav", audio_content), 
-                    model="whisper-large-v3", 
-                    response_format="json"
-                )
-                
-                user_text = transcription.text
-                st.session_state.sp_history.append({"role": "user", "content": user_text})
-                
-                with st.spinner("🧠 Yanıt hazırlanıyor..."):
-                    sys_prompt = "Sen arkadaş canlısı bir Alman dil partnerisin. Doğal bir sohbetteymiş gibi kısa ve akıcı cevaplar ver."
-                    context = "".join([f"\n{m['role']}: {m.get('de', m.get('content'))}" for m in st.session_state.sp_history[-4:]])
-                    user_prompt = f"Geçmiş: {context}\nÖğrenci: {user_text}\nJSON Formatı: {{\"de\": \"Almanca cevabın (KISA)\", \"tr\": \"Türkçe çevirisi\", \"correction\": \"Öğrencinin son cümlesinde hata varsa düzelt, yoksa boş bırak\"}}"
+        if "last_audio" not in st.session_state or st.session_state.last_audio != audio_bytes:
+            st.session_state.last_audio = audio_bytes
+            
+            with st.spinner("🎙️ İşleniyor..."):
+                try:
+                    audio_content = audio_bytes.getvalue()
+                    transcription = client.audio.transcriptions.create(
+                        file=("audio.wav", audio_content), 
+                        model="whisper-large-v3", 
+                        response_format="json"
+                    )
                     
-                    hoca_data = get_json_from_llm(sys_prompt, user_prompt)
-                    if hoca_data:
-                        st.session_state.sp_history.append({
-                            "role": "ai", 
-                            "de": hoca_data.get("de"), 
-                            "tr": hoca_data.get("tr"), 
-                            "correction": hoca_data.get("correction")
-                        })
-                        c.execute("UPDATE stats SET total_xp = total_xp + 20 WHERE user_id=1")
-                        conn.commit()
-                        st.session_state.xp += 20
-                        st.rerun()
-            except Exception as e: 
-                st.error(f"Ses işleme sistemi hatası: {str(e)}")
+                    user_text = transcription.text
+                    st.session_state.sp_history.append({"role": "user", "content": user_text})
+                    
+                    with st.spinner("🧠 Yanıt hazırlanıyor..."):
+                        sys_prompt = "Sen arkadaş canlısı bir Alman dil partnerisin. Doğal bir sohbetteymiş gibi kısa ve akıcı cevaplar ver. Öğrencinin cümlesini asla tekrar etme."
+                        context = "".join([f"\n{m['role']}: {m.get('de', m.get('content'))}" for m in st.session_state.sp_history[-4:]])
+                        user_prompt = f"Geçmiş: {context}\nÖğrenci: {user_text}\nJSON Formatı: {{\"de\": \"Almanca cevabın (KISA)\", \"tr\": \"Türkçe çevirisi\", \"correction\": \"Öğrencinin son cümlesinde hata varsa düzelt, yoksa boş bırak\"}}"
+                        
+                        hoca_data = get_json_from_llm(sys_prompt, user_prompt)
+                        if hoca_data:
+                            st.session_state.sp_history.append({
+                                "role": "ai", 
+                                "de": hoca_data.get("de"), 
+                                "tr": hoca_data.get("tr"), 
+                                "correction": hoca_data.get("correction")
+                            })
+                            c.execute("UPDATE stats SET total_xp = total_xp + 20 WHERE user_id=1")
+                            conn.commit()
+                            st.session_state.xp += 20
+                            st.rerun()
+                except Exception as e: 
+                    st.error(f"Ses işleme sistemi hatası: {str(e)}")
 
 # ------------------------------------------
 # SRS KARTLARI
