@@ -410,6 +410,7 @@ st.sidebar.markdown("---")
 
 sayfa = st.sidebar.radio("📚 ÖĞRENME MODÜLLERİ", [
     "📊 Akademi Paneli", 
+    "🎯 Adaptif Seviye Analizi",
     "📚 Lektionen (Kur Eğitimi)", 
     "📰 Tagesbericht (Kişisel Bülten)", 
     "📖 Lesen (Okuma ve Çıkarım)", 
@@ -495,6 +496,147 @@ if sayfa == "📊 Akademi Paneli":
             st.markdown(f"<div style='display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #334155;'><span style='color:#94a3b8;'>{m_date} - {m_name}</span><span style='color:#34d399; font-weight:bold;'>{m_score} Puan</span></div>", unsafe_allow_html=True)
     else:
         st.info("Henüz kaydedilmiş bir performans geçmişi yok.")
+
+# ------------------------------------------
+# YENİ EKLENTİ: AKILLI ADAPTİF SEVİYE ANALİZİ
+# ------------------------------------------
+elif sayfa == "🎯 Adaptif Seviye Analizi":
+    st.markdown(f'<div class="module-header">🎯 Akıllı Adaptif Seviye Analizi</div>', unsafe_allow_html=True)
+    st.markdown('<div class="module-subtitle">Müfredatını bozmadan gerçek dil seviyeni ve nokta atışı zayıf noktalarını tespit eden akıllı mülakat analizi.</div>', unsafe_allow_html=True)
+    
+    if "adaptif_asama" not in st.session_state:
+        st.session_state.adaptif_asama = "giris"
+    if "adaptif_sorular" not in st.session_state:
+        st.session_state.adaptif_sorular = []
+    if "adaptif_cevaplar" not in st.session_state:
+        st.session_state.adaptif_cevaplar = {}
+
+    if st.session_state.adaptif_asama == "giris":
+        st.markdown("""
+        <div style="background: rgba(30, 41, 59, 0.6); padding: 30px; border-radius: 12px; border: 1px solid #334155;">
+            <h3 style="color: #60a5fa; margin-top:0;">Nasıl Çalışır?</h3>
+            <p style="font-size: 16px; line-height: 1.6;">Bu analiz testi; temel A1 seviyesinden ileri C2 seviyesine kadar kademeli olarak zorlaşan 5 stratejik soru sorar. Test bittiğinde sistem ders akışını değiştirmeden tam olarak hangi seviyede olduğunu söyler ve takıldığın gramer açıklarını <b>Zayıf Nokta Radarı</b>'na kaydeder.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🚀 Adaptif Analiz Mülakatını Başlat", type="primary", use_container_width=True):
+            with st.spinner("Seviye tespit soruları hazırlanıyor..."):
+                sys_prompt = "Sen kıdemli bir Goethe Enstitüsü dil denetmenisin."
+                user_prompt = f"""
+                Öğrencinin dil seviyesini (A1.1'den C2'ye kadar) nokta atışı test etmek için kademeli olarak zorlaşan 5 adet çoktan seçmeli Almanca soru hazırla.
+                JSON Formatı:
+                {{
+                    "sorular": [
+                        {{
+                            "id": 1,
+                            "zorluk": "A1-A2",
+                            "soru_metni": "Almanca soru...",
+                            "secenekler": ["A) ...", "B) ...", "C) ...", "D) ..."],
+                            "dogru_cevap": "A) ...",
+                            "gramer_konusu": "Örn: Präsens / Sein"
+                        }},
+                        {{
+                            "id": 2,
+                            "zorluk": "A2-B1",
+                            "soru_metni": "Almanca soru...",
+                            "secenekler": ["A) ...", "B) ...", "C) ...", "D) ..."],
+                            "dogru_cevap": "C) ...",
+                            "gramer_konusu": "Örn: Perfekt"
+                        }},
+                        {{
+                            "id": 3,
+                            "zorluk": "B1-B2",
+                            "soru_metni": "Almanca soru...",
+                            "secenekler": ["A) ...", "B) ...", "C) ...", "D) ..."],
+                            "dogru_cevap": "B) ...",
+                            "gramer_konusu": "Örn: Präteritum"
+                        }},
+                        {{
+                            "id": 4,
+                            "zorluk": "B2-C1",
+                            "soru_metni": "Almanca soru...",
+                            "secenekler": ["A) ...", "B) ...", "C) ...", "D) ..."],
+                            "dogru_cevap": "D) ...",
+                            "gramer_konusu": "Örn: Passiv"
+                        }},
+                        {{
+                            "id": 5,
+                            "zorluk": "C1-C2",
+                            "soru_metni": "Almanca soru...",
+                            "secenekler": ["A) ...", "B) ...", "C) ...", "D) ..."],
+                            "dogru_cevap": "A) ...",
+                            "gramer_konusu": "Örn: Konjunktiv I/II"
+                        }}
+                    ]
+                }}"""
+                res = get_json_from_llm(sys_prompt, user_prompt)
+                if res and "sorular" in res:
+                    st.session_state.adaptif_sorular = res["sorular"]
+                    st.session_state.adaptif_asama = "test"
+                    st.rerun()
+
+    elif st.session_state.adaptif_asama == "test":
+        sorular = st.session_state.adaptif_sorular
+        with st.form("adaptif_form"):
+            secimler = {}
+            for s in sorular:
+                st.markdown(f"**Soru {s['id']} ({s['zorluk']}):** {s['soru_metni']}")
+                secimler[s['id']] = st.radio(f"Şıklar ({s['id']}):", s['secenekler'], index=None, key=f"ad_q_{s['id']}")
+                st.markdown("---")
+                
+            submit_test = st.form_submit_button("Analizi Tamamla ve Sonucu Gör", type="primary")
+            if submit_test:
+                dogru_sayisi = 0
+                eksik_konular = []
+                for s in sorular:
+                    kullanici_secimi = secimler.get(s['id'])
+                    if kullanici_secimi == s['dogru_cevap']:
+                        dogru_sayisi += 1
+                    else:
+                        eksik_konular.append(s['gramer_konusu'])
+                        log_mistake(s['gramer_konusu'])
+                        
+                st.session_state.adaptif_sonuc = {
+                    "dogru": dogru_sayisi,
+                    "toplam": len(sorular),
+                    "eksikler": eksik_konular
+                }
+                st.session_state.adaptif_asama = "sonuc"
+                st.rerun()
+
+    elif st.session_state.adaptif_asama == "sonuc":
+        res = st.session_state.adaptif_sonuc
+        dogru = res["dogru"]
+        
+        # Seviye tespiti mantığı
+        tahmini_seviye = "A1.1"
+        if dogru >= 5: tahmini_seviye = "C1 / C2"
+        elif dogru == 4: tahmini_seviye = "B2"
+        elif dogru == 3: tahmini_seviye = "B1"
+        elif dogru == 2: tahmini_seviye = "A2"
+        elif dogru == 1: tahmini_seviye = "A1.2"
+        else: tahmini_seviye = "A1.1"
+        
+        st.markdown(f"""
+        <div style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; border-radius: 15px; padding: 30px; text-align: center; margin-bottom: 20px;">
+            <h2>🎯 Analiz Tamamlandı!</h2>
+            <p style="font-size: 18px; margin-top: 10px;">Tespit Edilen Dil Seviyen: <b style="color: #34d399; font-size: 24px;">{tahmini_seviye}</b></p>
+            <p>Doğru Sayısı: {dogru} / {res['toplam']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if res["eksikler"]:
+            st.markdown("### 🔍 Nokta Atışı Zayıf Noktaların")
+            st.markdown("Analiz sonucunda aşağıdaki gramer başlıklarında açıkların olduğu tespit edildi ve **Zayıf Nokta Radarı**'na işlendi:")
+            for konu in set(res["eksikler"]):
+                st.markdown(f"- ⚠️ **{konu}**")
+        else:
+            st.success("Mükemmel! Testteki tüm soruları doğru yanıtladın, belirgin bir zayıf nokta tespit edilmedi.")
+            
+        if st.button("🔄 Yeni Analiz Yap"):
+            st.session_state.adaptif_asama = "giris"
+            st.session_state.adaptif_sorular = []
+            st.rerun()
 
 # ------------------------------------------
 # KAPSAMLI EĞİTİM MODÜLÜ (TÜRKÇE ANLATIM)
@@ -815,7 +957,7 @@ elif sayfa == "🛠️ Cümle / Metin Düzeltme Stüdyosu":
             st.warning("Lütfen analiz için bir metin girin.")
 
 # ------------------------------------------
-# YENİ EKLENTİ 1: DİKTAT-TRAINER (SESLİ DİKTAT)
+# DİKTAT-TRAINER (SESLİ DİKTAT)
 # ------------------------------------------
 elif sayfa == "🎧 Diktat-Trainer (Sesli Diktat)":
     st.markdown(f'<div class="module-header">🎧 Diktat-Trainer</div>', unsafe_allow_html=True)
@@ -863,7 +1005,7 @@ elif sayfa == "🎧 Diktat-Trainer (Sesli Diktat)":
                 st.error(f"❌ Hatalı veya eksik yazdın.\n\n**Doğrusu:** `{d['cumle_de']}`\n**Senin yazdığın:** `{user_input}`")
 
 # ------------------------------------------
-# YENİ EKLENTİ 2: REDEWENDUNGEN (DEYİMLER KÖŞESİ)
+# REDEWENDUNGEN (DEYİMLER KÖŞESİ)
 # ------------------------------------------
 elif sayfa == "💬 Redewendungen (Deyimler Köşesi)":
     st.markdown(f'<div class="module-header">💬 Redewendungen & Sprichwörter</div>', unsafe_allow_html=True)
@@ -896,7 +1038,7 @@ elif sayfa == "💬 Redewendungen (Deyimler Köşesi)":
                 """, unsafe_allow_html=True)
 
 # ------------------------------------------
-# YENİ EKLENTİ 3: PHONETIK-TRAINER (TELAFUZ ANALİZİ)
+# PHONETIK-TRAINER (TELAFUZ ANALİZİ)
 # ------------------------------------------
 elif sayfa == "🎙️ Phonetik-Trainer (Telaffuz Analizi)":
     st.markdown(f'<div class="module-header">🎙️ Phonetik-Trainer</div>', unsafe_allow_html=True)
